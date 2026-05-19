@@ -1,0 +1,1966 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Proposta Comercial | SC Studio & Esmalteria</title>
+  <meta name="description" content="Proposta comercial interativa para SC Studio & Esmalteria: landing page, agendamento online, tráfego local e automação por WhatsApp.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,700;1,800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #fbf7f1;
+      --bg-2: #fffdf9;
+      --surface: rgba(255, 253, 249, 0.88);
+      --surface-strong: #ffffff;
+      --primary: #b85f6b;
+      --primary-2: #8f3848;
+      --secondary: #c9a87c;
+      --secondary-2: #8a6b3f;
+      --accent: #7b8f73;
+      --accent-2: #47614f;
+      --ink: #2c2422;
+      --muted: #756963;
+      --soft: #efe5db;
+      --soft-2: #f7eee6;
+      --border: rgba(44, 36, 34, 0.13);
+      --border-strong: rgba(184, 95, 107, 0.3);
+      --white: #ffffff;
+      --danger-soft: #f5dce1;
+      --success-soft: #e5eee1;
+      --amber-soft: #f4ead8;
+      --rose-soft: #f8e4e8;
+      --green-soft: #e6efe3;
+      --sh: 0 clamp(0.625rem, 0.43rem + 0.63vw, 1rem) clamp(1.625rem, 1.11rem + 1.67vw, 2.625rem) rgba(70, 52, 42, 0.08);
+      --sh2: 0 clamp(1rem, 0.61rem + 1.25vw, 1.75rem) clamp(2.5rem, 1.72rem + 2.5vw, 4rem) rgba(70, 52, 42, 0.14);
+      --radius: clamp(0.875rem, 0.81rem + 0.21vw, 1rem);
+      --radius-lg: clamp(1rem, 0.87rem + 0.42vw, 1.25rem);
+      --pad: clamp(1rem, 0.48rem + 1.67vw, 2rem);
+      --gap: clamp(0.875rem, 0.42rem + 1.46vw, 1.75rem);
+      --max: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(184, 95, 107, 0.08), transparent 34%),
+        linear-gradient(315deg, rgba(123, 143, 115, 0.1), transparent 38%),
+        var(--bg);
+      font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      min-height: 100vh;
+    }
+
+    button,
+    a {
+      font: inherit;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .svg-defs {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+    }
+
+    .progress {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 90;
+      width: 100%;
+      height: clamp(0.1875rem, 0.12rem + 0.21vw, 0.3125rem);
+      background: rgba(44, 36, 34, 0.08);
+    }
+
+    .progress__bar {
+      width: 11.111%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      transition: width 540ms cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .topbar {
+      position: fixed;
+      top: clamp(0.625rem, 0.3rem + 1.04vw, 1.25rem);
+      left: 50%;
+      z-index: 80;
+      display: flex;
+      width: min(calc(100% - clamp(1.5rem, 0.72rem + 2.5vw, 3rem)), var(--max));
+      transform: translateX(-50%);
+      align-items: center;
+      justify-content: space-between;
+      gap: clamp(0.75rem, 0.36rem + 1.25vw, 1.5rem);
+      pointer-events: none;
+    }
+
+    .dots {
+      display: flex;
+      align-items: center;
+      gap: clamp(0.375rem, 0.25rem + 0.42vw, 0.625rem);
+      padding: clamp(0.375rem, 0.25rem + 0.42vw, 0.625rem);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 253, 249, 0.75);
+      box-shadow: var(--sh);
+      backdrop-filter: blur(18px);
+      pointer-events: auto;
+    }
+
+    .dot {
+      width: clamp(0.5rem, 0.43rem + 0.21vw, 0.625rem);
+      height: clamp(0.5rem, 0.43rem + 0.21vw, 0.625rem);
+      border: 0;
+      border-radius: 999px;
+      background: rgba(44, 36, 34, 0.22);
+      cursor: pointer;
+      transition:
+        width 360ms cubic-bezier(0.22, 1, 0.36, 1),
+        background 260ms ease,
+        transform 260ms ease;
+    }
+
+    .dot:hover {
+      transform: translateY(-1px);
+      background: rgba(184, 95, 107, 0.56);
+    }
+
+    .dot.is-active {
+      width: clamp(1.625rem, 1.3rem + 1.04vw, 2.25rem);
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+
+    .counter {
+      min-width: clamp(4.75rem, 4.1rem + 2.08vw, 6rem);
+      padding: clamp(0.5rem, 0.34rem + 0.52vw, 0.8125rem) clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 253, 249, 0.75);
+      box-shadow: var(--sh);
+      color: var(--muted);
+      font-size: clamp(0.75rem, 0.68rem + 0.21vw, 0.875rem);
+      font-weight: 700;
+      letter-spacing: 0;
+      text-align: center;
+      backdrop-filter: blur(18px);
+      pointer-events: auto;
+    }
+
+    .counter strong {
+      color: var(--ink);
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      padding: clamp(5.25rem, 4.21rem + 3.33vw, 7.25rem) clamp(1rem, 0.22rem + 2.5vw, 2.5rem) clamp(3.75rem, 2.97rem + 2.5vw, 5.25rem);
+      overflow-y: auto;
+      opacity: 0;
+      filter: blur(6px);
+      transform: translateX(60px);
+      transition:
+        opacity 540ms cubic-bezier(0.22, 1, 0.36, 1),
+        transform 540ms cubic-bezier(0.22, 1, 0.36, 1),
+        filter 540ms cubic-bezier(0.22, 1, 0.36, 1);
+      pointer-events: none;
+    }
+
+    .slide.active {
+      z-index: 2;
+      opacity: 1;
+      filter: blur(0);
+      transform: translateX(0);
+      pointer-events: auto;
+    }
+
+    .slide.leaving {
+      z-index: 3;
+      opacity: 0;
+      filter: blur(6px);
+      transform: translateX(-60px);
+      transition:
+        opacity 400ms ease,
+        transform 400ms ease,
+        filter 400ms ease;
+      pointer-events: none;
+    }
+
+    .slide::before {
+      content: "";
+      position: fixed;
+      inset: clamp(3rem, 2.35rem + 2.08vw, 4.25rem) auto auto clamp(1rem, 0.48rem + 1.67vw, 2rem);
+      width: clamp(12rem, 8.1rem + 12.5vw, 19.5rem);
+      height: clamp(12rem, 8.1rem + 12.5vw, 19.5rem);
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(184, 95, 107, 0.13), transparent 68%);
+      pointer-events: none;
+    }
+
+    .slide::after {
+      content: "";
+      position: fixed;
+      right: clamp(1rem, 0.48rem + 1.67vw, 2rem);
+      bottom: clamp(1rem, 0.48rem + 1.67vw, 2rem);
+      width: clamp(13rem, 8.45rem + 14.58vw, 21.75rem);
+      height: clamp(13rem, 8.45rem + 14.58vw, 21.75rem);
+      border-radius: 999px;
+      background: radial-gradient(circle, rgba(201, 168, 124, 0.14), transparent 68%);
+      pointer-events: none;
+    }
+
+    .slide-shell {
+      position: relative;
+      z-index: 2;
+      display: grid;
+      width: min(100%, var(--max));
+      min-height: calc(100vh - clamp(9rem, 7.44rem + 5vw, 12rem));
+      margin: 0 auto;
+      align-items: center;
+      gap: clamp(1.25rem, 0.47rem + 2.5vw, 2.75rem);
+    }
+
+    .grid-2 {
+      grid-template-columns: minmax(0, 1.03fr) minmax(clamp(20rem, 14.8rem + 16.67vw, 30rem), 0.97fr);
+    }
+
+    .grid-compact {
+      grid-template-columns: minmax(0, 0.9fr) minmax(clamp(22rem, 16.8rem + 16.67vw, 32rem), 1.1fr);
+    }
+
+    .stack {
+      display: grid;
+      gap: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+    }
+
+    [data-a] {
+      opacity: 0;
+      transform: translateY(24px);
+      transition:
+        opacity 620ms ease,
+        transform 620ms cubic-bezier(0.22, 1, 0.36, 1);
+      transition-delay: var(--delay, 0ms);
+    }
+
+    .slide.active [data-a] {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .badge,
+    .eyebrow,
+    .mini-badge {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      gap: clamp(0.4375rem, 0.31rem + 0.42vw, 0.6875rem);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 253, 249, 0.72);
+      color: var(--primary-2);
+      font-size: clamp(0.6875rem, 0.62rem + 0.21vw, 0.8125rem);
+      font-weight: 800;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      box-shadow: var(--sh);
+      backdrop-filter: blur(14px);
+    }
+
+    .badge {
+      padding: clamp(0.625rem, 0.46rem + 0.52vw, 0.9375rem) clamp(0.875rem, 0.61rem + 0.83vw, 1.375rem);
+    }
+
+    .badge.pulse {
+      animation: badgePulse 2.5s ease-in-out infinite;
+    }
+
+    .eyebrow {
+      position: relative;
+      padding: clamp(0.5rem, 0.37rem + 0.42vw, 0.75rem) clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      padding-left: clamp(2.25rem, 2.02rem + 0.73vw, 2.6875rem);
+      box-shadow: none;
+      background: transparent;
+    }
+
+    .eyebrow::before {
+      content: "";
+      position: absolute;
+      left: clamp(0.75rem, 0.62rem + 0.42vw, 1rem);
+      width: 22px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+
+    .mini-badge {
+      padding: clamp(0.375rem, 0.25rem + 0.42vw, 0.625rem) clamp(0.5625rem, 0.4rem + 0.52vw, 0.875rem);
+      font-size: clamp(0.625rem, 0.56rem + 0.21vw, 0.75rem);
+      box-shadow: none;
+      background: var(--soft-2);
+    }
+
+    .live-dot {
+      position: relative;
+      display: inline-block;
+      width: clamp(0.5rem, 0.43rem + 0.21vw, 0.625rem);
+      height: clamp(0.5rem, 0.43rem + 0.21vw, 0.625rem);
+      border-radius: 999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 clamp(0.1875rem, 0.12rem + 0.21vw, 0.3125rem) rgba(123, 143, 115, 0.14);
+    }
+
+    .live-dot::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: var(--accent);
+      animation: livePulse 1.8s ease-out infinite;
+    }
+
+    @keyframes livePulse {
+      0% {
+        transform: scale(1);
+        opacity: 0.62;
+      }
+      100% {
+        transform: scale(2.8);
+        opacity: 0;
+      }
+    }
+
+    @keyframes badgePulse {
+      0%,
+      100% {
+        box-shadow: var(--sh), 0 0 0 0 rgba(184, 95, 107, 0.18);
+      }
+      50% {
+        box-shadow: var(--sh), 0 0 0 clamp(0.5rem, 0.24rem + 0.83vw, 1rem) rgba(184, 95, 107, 0);
+      }
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    .title {
+      max-width: clamp(39rem, 31.72rem + 23.33vw, 53rem);
+      color: var(--ink);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(3rem, 1.9rem + 3.54vw, 5.125rem);
+      font-weight: 800;
+      line-height: 0.98;
+      letter-spacing: 0;
+    }
+
+    .title em {
+      color: var(--primary);
+      font-style: italic;
+    }
+
+    .section-title {
+      max-width: clamp(39rem, 31.72rem + 23.33vw, 53rem);
+      color: var(--ink);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(2.25rem, 1.47rem + 2.5vw, 3.75rem);
+      font-weight: 700;
+      line-height: 1.03;
+      letter-spacing: 0;
+    }
+
+    .section-title em {
+      color: var(--primary);
+      font-style: italic;
+    }
+
+    .lead {
+      max-width: clamp(33rem, 26.76rem + 20vw, 45rem);
+      color: var(--muted);
+      font-size: clamp(1rem, 0.87rem + 0.42vw, 1.25rem);
+      line-height: 1.68;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: clamp(0.8125rem, 0.72rem + 0.31vw, 1rem);
+      line-height: 1.6;
+    }
+
+    .icon {
+      width: clamp(1rem, 0.87rem + 0.42vw, 1.25rem);
+      height: clamp(1rem, 0.87rem + 0.42vw, 1.25rem);
+      flex: 0 0 auto;
+    }
+
+    .icon-lg {
+      width: clamp(1.5rem, 1.24rem + 0.83vw, 2rem);
+      height: clamp(1.5rem, 1.24rem + 0.83vw, 2rem);
+      flex: 0 0 auto;
+    }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--surface);
+      box-shadow: var(--sh);
+      backdrop-filter: blur(18px);
+      transition:
+        transform 260ms ease,
+        box-shadow 260ms ease,
+        border-color 260ms ease;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: clamp(0.1875rem, 0.12rem + 0.21vw, 0.3125rem);
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      opacity: 0.78;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      border-color: var(--border-strong);
+      box-shadow: var(--sh2);
+    }
+
+    .card-pad {
+      padding: clamp(1.25rem, 0.86rem + 1.25vw, 2rem);
+    }
+
+    .feature-list,
+    .plain-list,
+    .plan-list {
+      display: grid;
+      gap: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .feature-line,
+    .plain-list li,
+    .plan-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: clamp(0.625rem, 0.43rem + 0.63vw, 1rem);
+      color: var(--muted);
+      font-size: clamp(0.875rem, 0.78rem + 0.31vw, 1.0625rem);
+      line-height: 1.55;
+    }
+
+    .check,
+    .cross {
+      display: inline-flex;
+      width: clamp(1.375rem, 1.18rem + 0.63vw, 1.75rem);
+      height: clamp(1.375rem, 1.18rem + 0.63vw, 1.75rem);
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      flex: 0 0 auto;
+      color: var(--accent-2);
+      background: var(--green-soft);
+    }
+
+    .cross {
+      color: var(--muted);
+      background: var(--soft);
+    }
+
+    .cta {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.625rem, 0.43rem + 0.63vw, 1rem);
+      min-height: clamp(3.25rem, 2.86rem + 1.25vw, 4rem);
+      padding: clamp(0.875rem, 0.61rem + 0.83vw, 1.375rem) clamp(1.25rem, 0.73rem + 1.67vw, 2.25rem);
+      border: 0;
+      border-radius: 999px;
+      color: var(--white);
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem) clamp(1.875rem, 1.22rem + 2.08vw, 3.125rem) rgba(184, 95, 107, 0.28);
+      font-size: clamp(0.9375rem, 0.84rem + 0.31vw, 1.125rem);
+      font-weight: 800;
+      cursor: pointer;
+      transition:
+        transform 240ms ease,
+        box-shadow 240ms ease;
+    }
+
+    .cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 clamp(1rem, 0.61rem + 1.25vw, 1.75rem) clamp(2.25rem, 1.47rem + 2.5vw, 3.75rem) rgba(184, 95, 107, 0.34);
+    }
+
+    .ghost {
+      display: inline-flex;
+      width: fit-content;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(0.5rem, 0.37rem + 0.42vw, 0.75rem);
+      min-height: clamp(2.75rem, 2.49rem + 0.83vw, 3.25rem);
+      padding: clamp(0.75rem, 0.55rem + 0.63vw, 1.125rem) clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 253, 249, 0.68);
+      color: var(--ink);
+      font-size: clamp(0.875rem, 0.78rem + 0.31vw, 1.0625rem);
+      font-weight: 800;
+      box-shadow: var(--sh);
+      transition:
+        transform 240ms ease,
+        box-shadow 240ms ease,
+        border-color 240ms ease;
+    }
+
+    .ghost:hover {
+      transform: translateY(-2px);
+      border-color: var(--border-strong);
+      box-shadow: var(--sh2);
+    }
+
+    .cover-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+    }
+
+    .include-card {
+      display: grid;
+      gap: clamp(0.875rem, 0.49rem + 1.25vw, 1.625rem);
+    }
+
+    .include-card__head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+    }
+
+    .include-card h3,
+    .stat-card h3,
+    .mini-title,
+    .plan h3 {
+      color: var(--ink);
+      font-size: clamp(1rem, 0.87rem + 0.42vw, 1.25rem);
+      line-height: 1.25;
+    }
+
+    .include-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      padding: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.54);
+    }
+
+    .icon-box {
+      display: inline-flex;
+      width: clamp(2.5rem, 2.11rem + 1.25vw, 3.25rem);
+      height: clamp(2.5rem, 2.11rem + 1.25vw, 3.25rem);
+      align-items: center;
+      justify-content: center;
+      border-radius: clamp(0.75rem, 0.62rem + 0.42vw, 1rem);
+      color: var(--primary);
+      background: var(--rose-soft);
+    }
+
+    .icon-box.gold {
+      color: var(--secondary-2);
+      background: var(--amber-soft);
+    }
+
+    .icon-box.green {
+      color: var(--accent-2);
+      background: var(--green-soft);
+    }
+
+    .countdown-card {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+      gap: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      padding: clamp(0.875rem, 0.61rem + 0.83vw, 1.375rem);
+      border: 1px solid rgba(184, 95, 107, 0.18);
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(184, 95, 107, 0.1), rgba(201, 168, 124, 0.12));
+    }
+
+    .countdown-number {
+      color: var(--primary);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(2.125rem, 1.48rem + 2.08vw, 3.375rem);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(0.75rem, 0.36rem + 1.25vw, 1.5rem);
+    }
+
+    .stat-card {
+      min-height: clamp(9rem, 7.7rem + 4.17vw, 11.5rem);
+      padding: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+    }
+
+    .stat-number {
+      display: block;
+      color: var(--primary);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(3rem, 2.09rem + 2.92vw, 4.75rem);
+      font-weight: 800;
+      line-height: 0.95;
+    }
+
+    .opportunity-panel {
+      display: grid;
+      gap: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+      padding: clamp(1.25rem, 0.86rem + 1.25vw, 2rem);
+      border: 1px solid var(--border);
+      border-radius: clamp(1.25rem, 1rem + 0.83vw, 1.75rem);
+      background:
+        linear-gradient(160deg, rgba(255, 253, 249, 0.95), rgba(247, 238, 230, 0.76)),
+        var(--surface);
+      box-shadow: var(--sh2);
+    }
+
+    .month-card {
+      display: grid;
+      gap: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      padding: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+      border: 1px solid rgba(184, 95, 107, 0.2);
+      border-radius: var(--radius-lg);
+      background: var(--rose-soft);
+    }
+
+    .month-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: clamp(0.375rem, 0.25rem + 0.42vw, 0.625rem);
+    }
+
+    .month-cell {
+      aspect-ratio: 1;
+      border-radius: clamp(0.5rem, 0.37rem + 0.42vw, 0.75rem);
+      background: rgba(255, 255, 255, 0.62);
+      border: 1px solid rgba(184, 95, 107, 0.12);
+    }
+
+    .month-cell.hot {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      box-shadow: 0 clamp(0.375rem, 0.18rem + 0.63vw, 0.75rem) clamp(1rem, 0.61rem + 1.25vw, 1.75rem) rgba(184, 95, 107, 0.22);
+    }
+
+    .ecosystem {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(1rem, 0.48rem + 1.67vw, 2rem);
+      padding-top: clamp(2.5rem, 1.85rem + 2.08vw, 3.75rem);
+    }
+
+    .connect-svg {
+      position: absolute;
+      top: clamp(0.875rem, 0.49rem + 1.25vw, 1.625rem);
+      left: 8%;
+      width: 84%;
+      height: clamp(4rem, 2.96rem + 3.33vw, 6rem);
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .connect-path {
+      fill: none;
+      stroke: url(#lineGradient);
+      stroke-width: 5;
+      stroke-linecap: round;
+      stroke-dasharray: 760;
+      stroke-dashoffset: 760;
+    }
+
+    .slide.active .connect-path {
+      animation: drawLine 1.35s 560ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes drawLine {
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
+
+    .eco-card {
+      min-height: clamp(17rem, 14.4rem + 8.33vw, 22rem);
+      padding: clamp(1.125rem, 0.73rem + 1.25vw, 1.875rem);
+    }
+
+    .eco-card h3 {
+      margin-top: clamp(1.125rem, 0.86rem + 0.83vw, 1.625rem);
+      color: var(--ink);
+      font-size: clamp(1.25rem, 1.05rem + 0.63vw, 1.625rem);
+    }
+
+    .browser,
+    .phone {
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: clamp(1.125rem, 0.93rem + 0.63vw, 1.5rem);
+      background: var(--surface-strong);
+      box-shadow: var(--sh2);
+    }
+
+    .browser-top {
+      display: flex;
+      align-items: center;
+      gap: clamp(0.375rem, 0.25rem + 0.42vw, 0.625rem);
+      padding: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      border-bottom: 1px solid var(--border);
+      background: var(--soft-2);
+    }
+
+    .browser-dot {
+      width: clamp(0.625rem, 0.5rem + 0.42vw, 0.875rem);
+      height: clamp(0.625rem, 0.5rem + 0.42vw, 0.875rem);
+      border-radius: 999px;
+      background: var(--primary);
+    }
+
+    .browser-dot:nth-child(2) {
+      background: var(--secondary);
+    }
+
+    .browser-dot:nth-child(3) {
+      background: var(--accent);
+    }
+
+    .url-bar {
+      flex: 1;
+      height: clamp(1.5rem, 1.24rem + 0.83vw, 2rem);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.7);
+      border: 1px solid var(--border);
+    }
+
+    .browser-body {
+      display: grid;
+      gap: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+      padding: clamp(1.25rem, 0.73rem + 1.67vw, 2.25rem);
+      background:
+        linear-gradient(135deg, rgba(184, 95, 107, 0.08), transparent 42%),
+        linear-gradient(315deg, rgba(201, 168, 124, 0.12), transparent 52%),
+        var(--bg-2);
+    }
+
+    .mock-hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: clamp(0.875rem, 0.49rem + 1.25vw, 1.625rem);
+    }
+
+    .mock-logo {
+      display: inline-flex;
+      width: clamp(3rem, 2.48rem + 1.67vw, 4rem);
+      height: clamp(3rem, 2.48rem + 1.67vw, 4rem);
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(184, 95, 107, 0.2);
+      border-radius: 999px;
+      background: var(--rose-soft);
+      color: var(--primary);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(1.25rem, 0.99rem + 0.83vw, 1.75rem);
+      font-weight: 800;
+    }
+
+    .mock-title {
+      color: var(--ink);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(1.75rem, 1.36rem + 1.25vw, 2.5rem);
+      line-height: 1.02;
+    }
+
+    .service-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(0.625rem, 0.37rem + 0.83vw, 1.125rem);
+    }
+
+    .service-mini {
+      min-height: clamp(6rem, 4.96rem + 3.33vw, 8rem);
+      padding: clamp(0.875rem, 0.55rem + 1.04vw, 1.5rem);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .service-mini strong {
+      display: block;
+      color: var(--primary);
+      font-size: clamp(0.9375rem, 0.84rem + 0.31vw, 1.125rem);
+      margin-bottom: clamp(0.375rem, 0.25rem + 0.42vw, 0.625rem);
+    }
+
+    .funnel {
+      display: grid;
+      gap: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+    }
+
+    .funnel-step {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: clamp(0.875rem, 0.55rem + 1.04vw, 1.5rem);
+      padding: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: rgba(255, 255, 255, 0.64);
+      box-shadow: var(--sh);
+    }
+
+    .funnel-number {
+      display: inline-flex;
+      width: clamp(2.25rem, 1.86rem + 1.25vw, 3rem);
+      height: clamp(2.25rem, 1.86rem + 1.25vw, 3rem);
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: var(--ink);
+      color: var(--white);
+      font-weight: 800;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: clamp(0.5rem, 0.37rem + 0.42vw, 0.75rem);
+    }
+
+    .chip {
+      padding: clamp(0.5rem, 0.37rem + 0.42vw, 0.75rem) clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.68);
+      color: var(--ink);
+      font-size: clamp(0.8125rem, 0.72rem + 0.31vw, 1rem);
+      font-weight: 700;
+    }
+
+    .phone {
+      width: min(100%, clamp(20rem, 16.1rem + 12.5vw, 27.5rem));
+      margin: 0 auto;
+      border-radius: clamp(1.75rem, 1.36rem + 1.25vw, 2.5rem);
+      background: var(--ink);
+      padding: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      color: var(--ink);
+    }
+
+    .phone-screen {
+      display: grid;
+      min-height: clamp(31rem, 25.8rem + 16.67vw, 41rem);
+      grid-template-rows: auto 1fr auto;
+      gap: clamp(0.875rem, 0.55rem + 1.04vw, 1.5rem);
+      overflow: hidden;
+      border-radius: clamp(1.25rem, 0.99rem + 0.83vw, 1.75rem);
+      background: linear-gradient(180deg, var(--bg-2), var(--soft-2));
+    }
+
+    .phone-head,
+    .phone-foot {
+      padding: clamp(1rem, 0.74rem + 0.83vw, 1.5rem);
+      background: rgba(255, 255, 255, 0.72);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .phone-foot {
+      border-top: 1px solid var(--border);
+      border-bottom: 0;
+    }
+
+    .chat-body {
+      display: grid;
+      align-content: end;
+      gap: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      padding: clamp(1rem, 0.74rem + 0.83vw, 1.5rem);
+    }
+
+    .bubble {
+      max-width: 84%;
+      padding: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+      border-radius: clamp(1rem, 0.74rem + 0.83vw, 1.5rem);
+      color: var(--ink);
+      background: var(--white);
+      box-shadow: var(--sh);
+      font-size: clamp(0.875rem, 0.78rem + 0.31vw, 1.0625rem);
+      line-height: 1.55;
+      opacity: 0;
+      transform: translateY(16px) scale(0.98);
+    }
+
+    .bubble.bot {
+      justify-self: start;
+      border-top-left-radius: clamp(0.375rem, 0.25rem + 0.42vw, 0.625rem);
+    }
+
+    .bubble.client {
+      justify-self: end;
+      border-top-right-radius: clamp(0.375rem, 0.25rem + 0.42vw, 0.625rem);
+      color: var(--white);
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+    }
+
+    .slide.active .bubble {
+      animation: chatIn 520ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    .slide.active .bubble:nth-child(1) {
+      animation-delay: 520ms;
+    }
+
+    .slide.active .bubble:nth-child(2) {
+      animation-delay: 980ms;
+    }
+
+    .slide.active .bubble:nth-child(3) {
+      animation-delay: 1440ms;
+    }
+
+    .slide.active .bubble:nth-child(4) {
+      animation-delay: 1900ms;
+    }
+
+    @keyframes chatIn {
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .automation-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(0.75rem, 0.36rem + 1.25vw, 1.5rem);
+    }
+
+    .mini-card {
+      padding: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.66);
+      box-shadow: var(--sh);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: clamp(1rem, 0.48rem + 1.67vw, 2rem);
+      align-items: stretch;
+    }
+
+    .plan {
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      gap: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+      padding: clamp(1.25rem, 0.86rem + 1.25vw, 2rem);
+    }
+
+    .plan.featured {
+      border-color: var(--border-strong);
+      background:
+        linear-gradient(180deg, rgba(184, 95, 107, 0.09), rgba(255, 253, 249, 0.9)),
+        var(--surface);
+      transform: translateY(clamp(-0.375rem, -0.19rem - 0.21vw, -0.125rem));
+    }
+
+    .plan-price {
+      color: var(--ink);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(2.125rem, 1.48rem + 2.08vw, 3.375rem);
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .plan-price span {
+      color: var(--muted);
+      font-family: "Inter", sans-serif;
+      font-size: clamp(0.75rem, 0.68rem + 0.21vw, 0.875rem);
+      font-weight: 700;
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .proof-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(clamp(21rem, 16.32rem + 15vw, 30rem), 0.9fr);
+      gap: clamp(1rem, 0.48rem + 1.67vw, 2rem);
+    }
+
+    .quote-card {
+      display: grid;
+      gap: clamp(0.875rem, 0.55rem + 1.04vw, 1.5rem);
+      padding: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);
+    }
+
+    .quote-mark {
+      color: var(--primary);
+      font-family: "Playfair Display", Georgia, serif;
+      font-size: clamp(2rem, 1.48rem + 1.67vw, 3rem);
+      line-height: 0.8;
+    }
+
+    .review-phone {
+      display: grid;
+      gap: clamp(0.875rem, 0.55rem + 1.04vw, 1.5rem);
+      padding: clamp(1.25rem, 0.86rem + 1.25vw, 2rem);
+    }
+
+    .stars {
+      display: flex;
+      gap: clamp(0.25rem, 0.18rem + 0.21vw, 0.375rem);
+      color: var(--secondary);
+    }
+
+    .final-shell {
+      text-align: center;
+      place-items: center;
+    }
+
+    .final-icon {
+      display: inline-flex;
+      width: clamp(5.5rem, 4.2rem + 4.17vw, 8rem);
+      height: clamp(5.5rem, 4.2rem + 4.17vw, 8rem);
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(184, 95, 107, 0.22);
+      border-radius: clamp(1.75rem, 1.36rem + 1.25vw, 2.5rem);
+      color: var(--primary);
+      background: linear-gradient(135deg, rgba(184, 95, 107, 0.16), rgba(201, 168, 124, 0.18));
+      box-shadow: var(--sh2);
+      animation: floatIcon 4s ease-in-out infinite;
+    }
+
+    @keyframes floatIcon {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(clamp(-0.5rem, -0.31rem - 0.21vw, -0.25rem));
+      }
+    }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: clamp(0.875rem, 0.78rem + 0.31vw, 1.0625rem);
+      font-weight: 700;
+    }
+
+    .nav-arrow {
+      position: fixed;
+      top: 50%;
+      z-index: 85;
+      display: inline-flex;
+      width: clamp(2.875rem, 2.42rem + 1.46vw, 3.75rem);
+      height: clamp(2.875rem, 2.42rem + 1.46vw, 3.75rem);
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: rgba(255, 253, 249, 0.78);
+      box-shadow: var(--sh);
+      color: var(--ink);
+      cursor: pointer;
+      transform: translateY(-50%);
+      transition:
+        opacity 260ms ease,
+        transform 260ms ease,
+        box-shadow 260ms ease;
+      backdrop-filter: blur(16px);
+    }
+
+    .nav-arrow:hover {
+      transform: translateY(-50%) scale(1.04);
+      box-shadow: var(--sh2);
+    }
+
+    .nav-arrow.is-hidden {
+      opacity: 0;
+      transform: translateY(-50%) scale(0.94);
+      pointer-events: none;
+    }
+
+    .nav-arrow.prev {
+      left: clamp(0.625rem, 0.3rem + 1.04vw, 1.25rem);
+    }
+
+    .nav-arrow.prev .icon-lg {
+      transform: rotate(180deg);
+    }
+
+    .nav-arrow.next {
+      right: clamp(0.625rem, 0.3rem + 1.04vw, 1.25rem);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 980px) {
+      html,
+      body {
+        overflow: auto;
+      }
+
+      .slide {
+        padding-inline: clamp(1rem, 0.48rem + 1.67vw, 2rem);
+      }
+
+      .slide-shell,
+      .grid-2,
+      .grid-compact,
+      .proof-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-grid,
+      .ecosystem,
+      .automation-grid,
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .connect-svg {
+        display: none;
+      }
+
+      .ecosystem {
+        padding-top: 0;
+      }
+
+      .service-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .dots {
+        max-width: calc(100vw - clamp(7rem, 5.44rem + 5vw, 10rem));
+        overflow-x: auto;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .include-row,
+      .funnel-step,
+      .mock-hero {
+        grid-template-columns: 1fr;
+      }
+
+      .cover-actions {
+        align-items: stretch;
+      }
+
+      .cta,
+      .ghost {
+        width: 100%;
+      }
+
+      .nav-arrow {
+        top: auto;
+        bottom: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);
+        transform: none;
+      }
+
+      .nav-arrow:hover {
+        transform: scale(1.04);
+      }
+
+      .nav-arrow.is-hidden {
+        transform: scale(0.94);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 1ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 1ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <svg class="svg-defs" aria-hidden="true">
+    <defs>
+      <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="var(--secondary)"></stop>
+        <stop offset="52%" stop-color="var(--primary)"></stop>
+        <stop offset="100%" stop-color="var(--accent)"></stop>
+      </linearGradient>
+      <symbol id="icon-sparkle" viewBox="0 0 24 24">
+        <path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+        <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="icon-calendar" viewBox="0 0 24 24">
+        <path d="M7 3v4M17 3v4M4.5 9.2h15M6.5 5h11A2.5 2.5 0 0120 7.5v10A2.5 2.5 0 0117.5 20h-11A2.5 2.5 0 014 17.5v-10A2.5 2.5 0 016.5 5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      </symbol>
+      <symbol id="icon-whatsapp" viewBox="0 0 24 24">
+        <path d="M7.2 19.3l-3.2.9.9-3.1A8.2 8.2 0 113 12a8.1 8.1 0 004.2 7.3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+        <path d="M9 8.9c.2-.4.4-.4.7-.4h.5c.2 0 .4 0 .5.4l.8 1.7c.1.3.1.4-.1.6l-.4.5c-.1.1-.2.3 0 .5.4.8 1.1 1.5 2.1 2 .2.1.4.1.5 0l.7-.8c.2-.2.4-.2.6-.1l1.7.8c.3.1.4.3.4.5 0 .8-.6 1.6-1.3 1.8-.7.2-2.5.1-4.5-1.5-1.9-1.5-3.2-3.7-3.3-4.7 0-.5.3-1.1.6-1.3z" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="icon-target" viewBox="0 0 24 24">
+        <path d="M12 21a9 9 0 100-18 9 9 0 000 18z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+        <path d="M12 17a5 5 0 100-10 5 5 0 000 10z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+        <path d="M12 13a1 1 0 100-2 1 1 0 000 2z" fill="currentColor"></path>
+      </symbol>
+      <symbol id="icon-phone" viewBox="0 0 24 24">
+        <path d="M8 2.8h8A2.2 2.2 0 0118.2 5v14A2.2 2.2 0 0116 21.2H8A2.2 2.2 0 015.8 19V5A2.2 2.2 0 018 2.8z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+        <path d="M10 18.2h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      </symbol>
+      <symbol id="icon-browser" viewBox="0 0 24 24">
+        <path d="M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v13A2.5 2.5 0 0117.5 21h-11A2.5 2.5 0 014 18.5v-13z" fill="none" stroke="currentColor" stroke-width="1.8"></path>
+        <path d="M4 8h16M7 5.7h.1M10 5.7h.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      </symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24">
+        <path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24">
+        <path d="M7 7l10 10M17 7L7 17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
+      </symbol>
+      <symbol id="icon-arrow" viewBox="0 0 24 24">
+        <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+      </symbol>
+      <symbol id="icon-megaphone" viewBox="0 0 24 24">
+        <path d="M4 13h3l10 5V6L7 11H4v2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+        <path d="M7 13l1.5 6h3L10 14M19 9.5a4 4 0 010 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      </symbol>
+      <symbol id="icon-nail" viewBox="0 0 24 24">
+        <path d="M10.4 3.5h3.2c1.1 0 2 .9 2 2v2.2c0 1.3-.6 2.4-1.5 3.2l-1 .9a1.6 1.6 0 01-2.2 0l-1-.9a4.2 4.2 0 01-1.5-3.2V5.5c0-1.1.9-2 2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+        <path d="M9.2 11.6L7.4 20a1.2 1.2 0 001.2 1.5h6.8a1.2 1.2 0 001.2-1.5l-1.8-8.4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path>
+        <path d="M10.5 6.8h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+      </symbol>
+      <symbol id="icon-star" viewBox="0 0 24 24">
+        <path d="M12 3.4l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8L12 3.4z" fill="currentColor"></path>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="progress" aria-hidden="true"><div class="progress__bar" id="progressBar"></div></div>
+
+  <div class="topbar" aria-label="Navegação da apresentação">
+    <div class="dots" id="dots"></div>
+    <div class="counter" id="counter"><strong>01</strong> / 09</div>
+  </div>
+
+  <button class="nav-arrow prev is-hidden" id="prevBtn" aria-label="Slide anterior">
+    <svg class="icon-lg" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+  </button>
+  <button class="nav-arrow next" id="nextBtn" aria-label="Próximo slide">
+    <svg class="icon-lg" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+  </button>
+
+  <main class="deck" id="deck">
+    <section class="slide active" data-slide="0" aria-label="Capa">
+      <div class="slide-shell grid-2">
+        <div class="stack">
+          <div class="badge pulse" data-a data-d="80">
+            <span class="live-dot" aria-hidden="true"></span>
+            Esmalteria, unhas e cílios · Proposta exclusiva
+          </div>
+          <h1 class="title" data-a data-d="180">
+            SC Studio com <em>agenda cheia</em><br>e presença premium
+          </h1>
+          <p class="lead" data-a data-d="300">
+            Uma landing page elegante, com agendamento online e WhatsApp integrado, para transformar interesse local em horários marcados.
+          </p>
+          <div class="cover-actions" data-a data-d="430">
+            <a class="cta" href="https://wa.me/5531990725053" target="_blank" rel="noopener noreferrer">
+              Falar no WhatsApp
+              <svg class="icon" aria-hidden="true"><use href="#icon-whatsapp"></use></svg>
+            </a>
+            <a class="ghost" href="#slide-7" data-goto="6">
+              Ver investimento
+              <svg class="icon" aria-hidden="true"><use href="#icon-arrow"></use></svg>
+            </a>
+          </div>
+        </div>
+
+        <aside class="card card-pad include-card" data-a data-d="360">
+          <div class="include-card__head">
+            <div>
+              <span class="mini-badge">O que está incluso</span>
+              <h3 style="margin-top: clamp(0.625rem, 0.43rem + 0.63vw, 1rem);">Sistema comercial para vender beleza com menos atrito.</h3>
+            </div>
+            <span class="icon-box gold"><svg class="icon-lg" aria-hidden="true"><use href="#icon-sparkle"></use></svg></span>
+          </div>
+          <div class="include-row">
+            <span class="icon-box"><svg class="icon" aria-hidden="true"><use href="#icon-browser"></use></svg></span>
+            <div>
+              <strong>Landing Page</strong>
+              <p class="small">Serviços, prova social, localização e CTA.</p>
+            </div>
+            <span class="mini-badge">Base</span>
+          </div>
+          <div class="include-row">
+            <span class="icon-box gold"><svg class="icon" aria-hidden="true"><use href="#icon-megaphone"></use></svg></span>
+            <div>
+              <strong>Tráfego local</strong>
+              <p class="small">Campanhas para quem procura beleza em BH.</p>
+            </div>
+            <span class="mini-badge">Atração</span>
+          </div>
+          <div class="include-row">
+            <span class="icon-box green"><svg class="icon" aria-hidden="true"><use href="#icon-whatsapp"></use></svg></span>
+            <div>
+              <strong>WhatsApp e automação</strong>
+              <p class="small">Agendamento com confirmação e fallback.</p>
+            </div>
+            <span class="mini-badge">Conversão</span>
+          </div>
+          <div class="countdown-card">
+            <strong class="countdown-number" data-countdown>--</strong>
+            <p class="small"><strong>dias</strong> para a próxima virada de agenda. O melhor momento para organizar campanhas é antes da procura aumentar.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="1" aria-label="Oportunidade">
+      <div class="slide-shell grid-2">
+        <div class="stack">
+          <div class="eyebrow" data-a data-d="80">O mercado · SC Studio em Belo Horizonte</div>
+          <h2 class="section-title" data-a data-d="170">
+            A cliente decide rápido. A marca precisa estar <em>pronta para receber</em>.
+          </h2>
+          <p class="lead" data-a data-d="280">
+            O projeto atual já tem uma base forte: serviços definidos, valores claros, endereço em Santa Efigênia e WhatsApp ativo. A oportunidade é amarrar tudo em uma jornada simples: ver, confiar e agendar.
+          </p>
+          <div class="stats-grid" data-a data-d="410">
+            <article class="card stat-card">
+              <span class="stat-number" data-count-to="15" data-suffix="+">0</span>
+              <h3>serviços</h3>
+              <p class="small">entre unhas, cílios, sobrancelhas e spa dos pés.</p>
+            </article>
+            <article class="card stat-card">
+              <span class="stat-number" data-count-to="5">0</span>
+              <h3>dias por semana</h3>
+              <p class="small">com horários publicados e agendamento por serviço.</p>
+            </article>
+            <article class="card stat-card">
+              <span class="stat-number" data-count-to="1">0</span>
+              <h3>canal central</h3>
+              <p class="small">WhatsApp direto para dúvidas, confirmação e conversão.</p>
+            </article>
+          </div>
+        </div>
+
+        <aside class="opportunity-panel" data-a data-d="360">
+          <div class="month-card">
+            <div class="include-card__head">
+              <div>
+                <span class="mini-badge">Agenda local</span>
+                <h3 style="margin-top: clamp(0.625rem, 0.43rem + 0.63vw, 1rem);">A virada do mês cria intenção natural para manutenção, alongamento e esmaltação.</h3>
+              </div>
+              <span class="icon-box"><svg class="icon-lg" aria-hidden="true"><use href="#icon-calendar"></use></svg></span>
+            </div>
+            <div class="month-row" aria-hidden="true">
+              <span class="month-cell"></span><span class="month-cell hot"></span><span class="month-cell"></span><span class="month-cell"></span><span class="month-cell"></span><span class="month-cell hot"></span><span class="month-cell"></span>
+              <span class="month-cell"></span><span class="month-cell"></span><span class="month-cell hot"></span><span class="month-cell"></span><span class="month-cell"></span><span class="month-cell"></span><span class="month-cell"></span>
+              <span class="month-cell hot"></span><span class="month-cell"></span><span class="month-cell"></span><span class="month-cell"></span><span class="month-cell hot"></span><span class="month-cell"></span><span class="month-cell"></span>
+            </div>
+          </div>
+          <ul class="plain-list">
+            <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Cliente encontra serviços, preços e localização sem depender de conversa inicial.</li>
+            <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Tráfego local leva pessoas para uma página feita para marcar horário, não só para curtir post.</li>
+            <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>WhatsApp entra como fechamento: rápido, familiar e com contexto do serviço escolhido.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="2" aria-label="Ecossistema">
+      <div class="slide-shell">
+        <div class="stack" style="max-width: clamp(50rem, 41.68rem + 26.67vw, 66rem);">
+          <div class="eyebrow" data-a data-d="80">Como funciona</div>
+          <h2 class="section-title" data-a data-d="170">Uma solução completa para <em>esmalteria, unhas e cílios</em>.</h2>
+          <p class="lead" data-a data-d="280">A proposta conecta três peças: uma página bonita e objetiva, campanhas locais com intenção e um fluxo de atendimento que reduz perda de leads.</p>
+        </div>
+        <div class="ecosystem">
+          <svg class="connect-svg" viewBox="0 0 800 140" aria-hidden="true">
+            <path class="connect-path" d="M30 95 C180 10 270 10 395 84 C520 155 620 150 770 34"></path>
+          </svg>
+          <article class="card eco-card" data-a data-d="390">
+            <span class="icon-box gold"><svg class="icon-lg" aria-hidden="true"><use href="#icon-browser"></use></svg></span>
+            <h3>Presença online</h3>
+            <p class="small">Landing page com estética premium, menu de serviços, depoimentos, localização e botões de ação claros.</p>
+            <span class="mini-badge" style="margin-top: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);">Landing Page</span>
+          </article>
+          <article class="card eco-card" data-a data-d="510">
+            <span class="icon-box"><svg class="icon-lg" aria-hidden="true"><use href="#icon-megaphone"></use></svg></span>
+            <h3>Atração</h3>
+            <p class="small">Campanhas para Instagram, Google Pesquisa e públicos próximos ao endereço do studio em Belo Horizonte.</p>
+            <span class="mini-badge" style="margin-top: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);">Tráfego local</span>
+          </article>
+          <article class="card eco-card" data-a data-d="630">
+            <span class="icon-box green"><svg class="icon-lg" aria-hidden="true"><use href="#icon-whatsapp"></use></svg></span>
+            <h3>Conversão</h3>
+            <p class="small">Agendamento por serviço, envio para WhatsApp e automação para confirmar pedido com dados completos.</p>
+            <span class="mini-badge" style="margin-top: clamp(1rem, 0.61rem + 1.25vw, 1.75rem);">WhatsApp</span>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="3" aria-label="Landing Page">
+      <div class="slide-shell grid-compact">
+        <div class="stack">
+          <div class="eyebrow" data-a data-d="80">O produto principal</div>
+          <h2 class="section-title" data-a data-d="170">
+            Uma landing page para mostrar valor antes de pedir o agendamento.
+          </h2>
+          <p class="lead" data-a data-d="280">A página organiza a experiência da cliente: ela vê o estilo do studio, entende os serviços, escolhe o que deseja e chega ao WhatsApp ou agenda já sabendo o próximo passo.</p>
+          <ul class="feature-list" data-a data-d="410">
+            <li class="feature-line"><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Design visual alinhado ao universo do SC Studio: elegante, acolhedor e premium.</li>
+            <li class="feature-line"><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Catálogo com serviços, duração e preços para reduzir dúvidas repetidas.</li>
+            <li class="feature-line"><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Agendamento online por data, horário e serviço escolhido.</li>
+            <li class="feature-line"><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Experiência mobile pensada para Instagram, Google e WhatsApp.</li>
+            <li class="feature-line"><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Estrutura preparada para SEO local em Belo Horizonte e Santa Efigênia.</li>
+          </ul>
+        </div>
+
+        <div class="browser" data-a data-d="360" aria-label="Mockup da landing page">
+          <div class="browser-top">
+            <span class="browser-dot"></span>
+            <span class="browser-dot"></span>
+            <span class="browser-dot"></span>
+            <span class="url-bar"></span>
+          </div>
+          <div class="browser-body">
+            <div class="mock-hero">
+              <div>
+                <span class="mini-badge">SC Studio & Esmalteria</span>
+                <h3 class="mock-title" style="margin-top: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);">Beleza que valoriza você</h3>
+                <p class="small" style="margin-top: clamp(0.625rem, 0.43rem + 0.63vw, 1rem);">Alongamento, esmaltação, cílios e sobrancelhas em Santa Efigênia.</p>
+              </div>
+              <span class="mock-logo">SC</span>
+            </div>
+            <div class="service-strip">
+              <div class="service-mini">
+                <strong>Alongamento</strong>
+                <p class="small">1h15 · R$ 140</p>
+              </div>
+              <div class="service-mini">
+                <strong>Esmaltação em gel</strong>
+                <p class="small">1h · R$ 60</p>
+              </div>
+              <div class="service-mini">
+                <strong>Spa dos pés</strong>
+                <p class="small">1h30 · R$ 90</p>
+              </div>
+            </div>
+            <div class="countdown-card">
+              <span class="icon-box green"><svg class="icon" aria-hidden="true"><use href="#icon-calendar"></use></svg></span>
+              <p class="small"><strong>Agendar horário</strong><br>Data, serviço e WhatsApp em um fluxo simples.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="4" aria-label="Tráfego e distribuição">
+      <div class="slide-shell grid-2">
+        <div class="stack">
+          <div class="eyebrow" data-a data-d="80">Como os clientes chegam</div>
+          <h2 class="section-title" data-a data-d="170">
+            Tráfego local para levar intenção direto para a agenda.
+          </h2>
+          <p class="lead" data-a data-d="280">A campanha não precisa prometer mil coisas. Ela precisa mostrar o melhor do SC Studio para mulheres próximas, com uma chamada clara para alongamento, manutenção, esmaltação, cílios e sobrancelhas.</p>
+          <div class="funnel" data-a data-d="410">
+            <div class="funnel-step">
+              <span class="funnel-number">1</span>
+              <div><strong>Anúncio local</strong><p class="small">Criativos com serviço, bairro e benefício principal.</p></div>
+              <svg class="icon" aria-hidden="true"><use href="#icon-megaphone"></use></svg>
+            </div>
+            <div class="funnel-step">
+              <span class="funnel-number">2</span>
+              <div><strong>Clique com intenção</strong><p class="small">A pessoa quer ver preço, resultado, endereço e horários.</p></div>
+              <svg class="icon" aria-hidden="true"><use href="#icon-target"></use></svg>
+            </div>
+            <div class="funnel-step">
+              <span class="funnel-number">3</span>
+              <div><strong>Landing Page</strong><p class="small">A página qualifica o interesse e remove dúvidas.</p></div>
+              <svg class="icon" aria-hidden="true"><use href="#icon-browser"></use></svg>
+            </div>
+            <div class="funnel-step">
+              <span class="funnel-number">4</span>
+              <div><strong>Lead ou venda</strong><p class="small">Agendamento online ou conversa já contextualizada no WhatsApp.</p></div>
+              <svg class="icon" aria-hidden="true"><use href="#icon-whatsapp"></use></svg>
+            </div>
+          </div>
+        </div>
+
+        <aside class="card card-pad stack" data-a data-d="360">
+          <span class="mini-badge">Canais indicados</span>
+          <div class="chips">
+            <span class="chip">Instagram Stories</span>
+            <span class="chip">Instagram Reels</span>
+            <span class="chip">Google Pesquisa</span>
+            <span class="chip">Google Maps</span>
+            <span class="chip">Remarketing local</span>
+            <span class="chip">Clique para WhatsApp</span>
+          </div>
+          <div class="countdown-card">
+            <strong class="countdown-number" data-countdown>--</strong>
+            <p class="small"><strong>dias para a virada de agenda.</strong><br>Campanhas ativadas antes do início do mês chegam quando a cliente começa a se programar.</p>
+          </div>
+          <ul class="plain-list">
+            <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Segmentação por raio ao redor de Santa Efigênia e bairros próximos.</li>
+            <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Chamadas diferentes para manutenção, alongamento novo e esmaltação em gel.</li>
+            <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Mensuração por cliques em WhatsApp e agendamentos solicitados.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="5" aria-label="Chatbot e automação">
+      <div class="slide-shell grid-2">
+        <div class="stack">
+          <div class="eyebrow" data-a data-d="80">Atendimento inteligente</div>
+          <h2 class="section-title" data-a data-d="170">
+            WhatsApp com resposta rápida para não perder cliente no intervalo.
+          </h2>
+          <p class="lead" data-a data-d="280">O projeto já prevê envio por Z-API e fallback para WhatsApp. A automação organiza a conversa com nome, serviço, data e horário, deixando a confirmação mais prática para o studio.</p>
+          <div class="automation-grid" data-a data-d="410">
+            <div class="mini-card">
+              <span class="icon-box green"><svg class="icon" aria-hidden="true"><use href="#icon-whatsapp"></use></svg></span>
+              <h3 class="mini-title" style="margin-top: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);">Disponível 24h</h3>
+              <p class="small">Capta intenção mesmo fora do horário de atendimento.</p>
+            </div>
+            <div class="mini-card">
+              <span class="icon-box"><svg class="icon" aria-hidden="true"><use href="#icon-sparkle"></use></svg></span>
+              <h3 class="mini-title" style="margin-top: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);">Resposta objetiva</h3>
+              <p class="small">Serviço, horário e endereço aparecem sem conversa longa.</p>
+            </div>
+            <div class="mini-card">
+              <span class="icon-box gold"><svg class="icon" aria-hidden="true"><use href="#icon-calendar"></use></svg></span>
+              <h3 class="mini-title" style="margin-top: clamp(0.75rem, 0.49rem + 0.83vw, 1.25rem);">Integração</h3>
+              <p class="small">Dados do agendamento chegam prontos para confirmação.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="phone" data-a data-d="350" aria-label="Mockup de conversa no WhatsApp">
+          <div class="phone-screen">
+            <div class="phone-head">
+              <strong>SC Studio & Esmalteria</strong>
+              <p class="small">Atendimento pelo WhatsApp</p>
+            </div>
+            <div class="chat-body">
+              <div class="bubble client">Oi! Tem horário para alongamento novo essa semana?</div>
+              <div class="bubble bot">Tenho sim. O alongamento dura em média 1h15 e o valor atual é R$ 140. Quer ver horários disponíveis?</div>
+              <div class="bubble client">Quero sexta depois das 14h.</div>
+              <div class="bubble bot">Perfeito. Encontrei opções para sexta. Posso separar seu nome, WhatsApp e confirmar com o studio?</div>
+            </div>
+            <div class="phone-foot">
+              <div class="url-bar" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="6" aria-label="Precificação" id="slide-7">
+      <div class="slide-shell">
+        <div class="stack" style="max-width: clamp(46rem, 38.2rem + 25vw, 61rem);">
+          <div class="eyebrow" data-a data-d="80">Investimento</div>
+          <h2 class="section-title" data-a data-d="170">Planos claros para tirar a presença digital do improviso.</h2>
+          <p class="lead" data-a data-d="280">Valores de referência para o pacote comercial. Mídia paga, domínio e integrações externas podem ser ajustados conforme o escopo final.</p>
+        </div>
+
+        <div class="pricing-grid">
+          <article class="card plan" data-a data-d="390">
+            <span class="mini-badge">Essencial</span>
+            <div>
+              <h3>Básico</h3>
+              <p class="small">Para colocar a marca no ar com uma página bonita e funcional.</p>
+            </div>
+            <div class="plan-price">R$1.000 <span>landing page</span></div>
+            <div class="divider"></div>
+            <ul class="plan-list">
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Landing page one-page responsiva.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Botões para WhatsApp, Instagram e localização.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Seções de serviços e prova social.</li>
+              <li><span class="cross"><svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg></span>Sem automação de agendamento.</li>
+              <li><span class="cross"><svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg></span>Sem configuração de tráfego.</li>
+            </ul>
+          </article>
+
+          <article class="card plan featured" data-a data-d="510">
+            <span class="mini-badge">Recomendado</span>
+            <div>
+              <h3>Completo</h3>
+              <p class="small">Para transformar visita em pedido de agendamento com menos etapas.</p>
+            </div>
+            <div class="plan-price">R$1.000 <span>+ R$450 mensais</span></div>
+            <div class="divider"></div>
+            <ul class="plan-list">
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Tudo do Básico.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Agendamento por serviço, data e horário.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Fluxo WhatsApp com mensagem pronta para confirmação.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Copy comercial para serviços principais.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Preparação para mensurar cliques e leads.</li>
+            </ul>
+          </article>
+
+          <article class="card plan" data-a data-d="630">
+            <span class="mini-badge">Crescimento</span>
+            <div>
+              <h3>Premium</h3>
+              <p class="small">Para lançar com tráfego e acompanhamento inicial.</p>
+            </div>
+            <div class="plan-price">R$300 <span>marketing mensal</span></div>
+            <p class="small"><strong>WhatsApp separado:</strong> R$400</p>
+            <div class="divider"></div>
+            <ul class="plan-list">
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Tudo do Completo.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Setup inicial de campanhas locais.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Roteiro de criativos para Instagram.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Revisão pós-lançamento com ajustes de conversão.</li>
+              <li><span class="cross"><svg class="icon" aria-hidden="true"><use href="#icon-x"></use></svg></span>Verba de anúncios não inclusa.</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="7" aria-label="Prova social">
+      <div class="slide-shell">
+        <div class="proof-grid">
+          <div class="stack">
+            <div class="eyebrow" data-a data-d="80">Prova social · diferenciais</div>
+            <h2 class="section-title" data-a data-d="170">
+              O SC Studio já tem o que uma boa campanha precisa: <em>confiança real</em>.
+            </h2>
+            <p class="lead" data-a data-d="280">Como não há bônus definido no projeto, este slide entra com força de prova social: atendimento acolhedor, qualidade premium e uma experiência pensada para a cliente se sentir cuidada.</p>
+            <div class="stats-grid" data-a data-d="410">
+              <article class="card stat-card">
+                <span class="stat-number" data-count-to="5" data-suffix="+">0</span>
+                <h3>anos</h3>
+                <p class="small">de experiência comunicados na landing atual.</p>
+              </article>
+              <article class="card stat-card">
+                <span class="stat-number" data-count-to="1000" data-suffix="+">0</span>
+                <h3>clientes</h3>
+                <p class="small">felizes como sinal de autoridade local.</p>
+              </article>
+              <article class="card stat-card">
+                <span class="stat-number" data-count-to="5">0</span>
+                <h3>estrelas</h3>
+                <p class="small">como linguagem visual para reforçar reputação.</p>
+              </article>
+            </div>
+          </div>
+
+          <aside class="card review-phone" data-a data-d="360">
+            <span class="mini-badge">Voz da cliente</span>
+            <article class="quote-card">
+              <div class="quote-mark">“</div>
+              <p class="lead" style="font-size: clamp(1rem, 0.87rem + 0.42vw, 1.25rem);">Melhor estúdio de unhas de BH. Atendimento impecável e resultado sempre perfeito.</p>
+              <div>
+                <strong>Mariana S.</strong>
+                <p class="small">Alongamento em gel</p>
+              </div>
+              <div class="stars" aria-label="Avaliação cinco estrelas">
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+                <svg class="icon" aria-hidden="true"><use href="#icon-star"></use></svg>
+              </div>
+            </article>
+            <div class="divider"></div>
+            <ul class="plain-list">
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Depoimentos conectados a serviços específicos.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Proposta visual compatível com marca de beleza premium.</li>
+              <li><span class="check"><svg class="icon" aria-hidden="true"><use href="#icon-check"></use></svg></span>Oferta clara para quem quer agendar sem fricção.</li>
+            </ul>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-slide="8" aria-label="CTA final">
+      <div class="slide-shell final-shell">
+        <div class="stack" style="justify-items: center; max-width: clamp(45rem, 36.68rem + 26.67vw, 61rem);">
+          <span class="final-icon" data-a data-d="80">
+            <svg style="width: clamp(2.75rem, 2.1rem + 2.08vw, 4rem); height: clamp(2.75rem, 2.1rem + 2.08vw, 4rem);" aria-hidden="true"><use href="#icon-nail"></use></svg>
+          </span>
+          <div class="badge pulse" data-a data-d="170">
+            <span class="live-dot" aria-hidden="true"></span>
+            Próxima agenda em movimento
+          </div>
+          <h2 class="title" data-a data-d="260">
+            A virada de agenda está chegando. <em>Vamos aproveitar?</em>
+          </h2>
+          <p class="lead" data-a data-d="380" style="text-align: center;">
+            O SC Studio já tem serviços, atendimento e posicionamento. Agora a página, o tráfego e o WhatsApp entram para transformar essa estrutura em mais pedidos de horário.
+          </p>
+          <a class="cta" href="https://wa.me/5531990725053" target="_blank" rel="noopener noreferrer" data-a data-d="510">
+            Falar agora no WhatsApp
+            <svg class="icon" aria-hidden="true"><use href="#icon-whatsapp"></use></svg>
+          </a>
+          <p class="footer-note" data-a data-d="630">Projeto SC Studio · Belo Horizonte, MG</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    (() => {
+      const slides = Array.from(document.querySelectorAll(".slide"));
+      const total = slides.length;
+      const dotsWrap = document.getElementById("dots");
+      const progressBar = document.getElementById("progressBar");
+      const counter = document.getElementById("counter");
+      const prevBtn = document.getElementById("prevBtn");
+      const nextBtn = document.getElementById("nextBtn");
+      let current = 0;
+      let locked = false;
+      let touchStartX = 0;
+      let touchStartY = 0;
+
+      document.querySelectorAll("[data-a]").forEach((el) => {
+        el.style.setProperty("--delay", `${Number(el.dataset.d || 0)}ms`);
+      });
+
+      dotsWrap.innerHTML = slides
+        .map((_, index) => `<button class="dot${index === 0 ? " is-active" : ""}" aria-label="Ir para o slide ${index + 1}" data-dot="${index}"></button>`)
+        .join("");
+
+      const dots = Array.from(document.querySelectorAll("[data-dot]"));
+
+      function pad(value) {
+        return String(value).padStart(2, "0");
+      }
+
+      function updateUI() {
+        dots.forEach((dot, index) => {
+          dot.classList.toggle("is-active", index === current);
+          dot.setAttribute("aria-current", index === current ? "true" : "false");
+        });
+        progressBar.style.width = `${((current + 1) / total) * 100}%`;
+        counter.innerHTML = `<strong>${pad(current + 1)}</strong> / ${pad(total)}`;
+        prevBtn.classList.toggle("is-hidden", current === 0);
+        nextBtn.classList.toggle("is-hidden", current === total - 1);
+        prevBtn.disabled = current === 0;
+        nextBtn.disabled = current === total - 1;
+        slides.forEach((slide, index) => {
+          slide.setAttribute("aria-hidden", index === current ? "false" : "true");
+        });
+      }
+
+      function easeOutCubic(t) {
+        return 1 - Math.pow(1 - t, 3);
+      }
+
+      function formatNumber(value) {
+        return Math.round(value).toLocaleString("pt-BR");
+      }
+
+      function animateCounters(slide) {
+        const counters = Array.from(slide.querySelectorAll("[data-count-to]"));
+        counters.forEach((counterEl) => {
+          const target = Number(counterEl.dataset.countTo || 0);
+          const prefix = counterEl.dataset.prefix || "";
+          const suffix = counterEl.dataset.suffix || "";
+          const duration = Number(counterEl.dataset.duration || 1350);
+          const startedAt = performance.now();
+
+          function tick(now) {
+            const progress = Math.min((now - startedAt) / duration, 1);
+            const eased = easeOutCubic(progress);
+            counterEl.textContent = `${prefix}${formatNumber(target * eased)}${suffix}`;
+            if (progress < 1) requestAnimationFrame(tick);
+          }
+
+          counterEl.textContent = `${prefix}0${suffix}`;
+          requestAnimationFrame(tick);
+        });
+      }
+
+      function updateCountdowns() {
+        const now = new Date();
+        const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1, 9, 0, 0);
+        const dayMs = 24 * 60 * 60 * 1000;
+        const days = Math.max(1, Math.ceil((nextMonthStart - now) / dayMs));
+        document.querySelectorAll("[data-countdown]").forEach((el) => {
+          el.textContent = String(days);
+        });
+      }
+
+      function goTo(index) {
+        if (locked || index === current || index < 0 || index >= total) return;
+        locked = true;
+
+        const previous = slides[current];
+        const next = slides[index];
+
+        previous.classList.remove("active");
+        previous.classList.add("leaving");
+        next.classList.add("active");
+        next.scrollTop = 0;
+        current = index;
+
+        updateUI();
+        animateCounters(next);
+
+        window.setTimeout(() => {
+          previous.classList.remove("leaving");
+        }, 420);
+
+        window.setTimeout(() => {
+          locked = false;
+        }, 900);
+      }
+
+      function nextSlide() {
+        goTo(current + 1);
+      }
+
+      function prevSlide() {
+        goTo(current - 1);
+      }
+
+      dotsWrap.addEventListener("click", (event) => {
+        const dot = event.target.closest("[data-dot]");
+        if (!dot) return;
+        goTo(Number(dot.dataset.dot));
+      });
+
+      document.querySelectorAll("[data-goto]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          goTo(Number(link.dataset.goto));
+        });
+      });
+
+      prevBtn.addEventListener("click", prevSlide);
+      nextBtn.addEventListener("click", nextSlide);
+
+      window.addEventListener("keydown", (event) => {
+        if (event.key === "ArrowRight" || event.key === " ") {
+          event.preventDefault();
+          nextSlide();
+        }
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          prevSlide();
+        }
+      });
+
+      window.addEventListener(
+        "wheel",
+        (event) => {
+          if (Math.abs(event.deltaY) < 28 || locked) return;
+          const active = slides[current];
+          const canScroll = active.scrollHeight > active.clientHeight + 8;
+          const atTop = active.scrollTop <= 8;
+          const atBottom = active.scrollTop + active.clientHeight >= active.scrollHeight - 8;
+
+          if (canScroll && event.deltaY > 0 && !atBottom) return;
+          if (canScroll && event.deltaY < 0 && !atTop) return;
+
+          event.preventDefault();
+          if (event.deltaY > 0) nextSlide();
+          if (event.deltaY < 0) prevSlide();
+        },
+        { passive: false }
+      );
+
+      window.addEventListener(
+        "touchstart",
+        (event) => {
+          const touch = event.changedTouches[0];
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+        },
+        { passive: true }
+      );
+
+      window.addEventListener(
+        "touchend",
+        (event) => {
+          const touch = event.changedTouches[0];
+          const diffX = touch.clientX - touchStartX;
+          const diffY = touch.clientY - touchStartY;
+          if (Math.max(Math.abs(diffX), Math.abs(diffY)) < 46 || locked) return;
+          if (Math.abs(diffX) > Math.abs(diffY)) {
+            if (diffX < 0) nextSlide();
+            if (diffX > 0) prevSlide();
+          } else {
+            if (diffY < 0) nextSlide();
+            if (diffY > 0) prevSlide();
+          }
+        },
+        { passive: true }
+      );
+
+      updateCountdowns();
+      updateUI();
+      animateCounters(slides[current]);
+    })();
+  </script>
+</body>
+</html>

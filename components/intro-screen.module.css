@@ -1,0 +1,247 @@
+/* ─── Intro Screen v2 — SC Studio ──────────────────────────────────────────── */
+
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  pointer-events: all;
+}
+
+/* ─── Background ─────────────────────────────────────────────────────────── */
+
+.bg {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 100% 100% at 50% 50%,
+    #fffaf3 0%,
+    #faf6ee 42%,
+    #f4e8e4 72%,
+    #ecdad8 100%
+  );
+}
+
+/* ─── Blobs orgânicos ────────────────────────────────────────────────────── */
+
+.blob1 {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: clamp(400px, 60vw, 700px);
+  height: clamp(400px, 60vw, 700px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 198, 201, 0.45) 0%, transparent 70%);
+  filter: blur(60px);
+  pointer-events: none;
+}
+
+.blob2 {
+  position: absolute;
+  bottom: -15%;
+  right: -10%;
+  width: clamp(350px, 55vw, 650px);
+  height: clamp(350px, 55vw, 650px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(185, 79, 95, 0.12) 0%, transparent 70%);
+  filter: blur(70px);
+  pointer-events: none;
+}
+
+.blob3 {
+  position: absolute;
+  top: 45%;
+  left: 55%;
+  width: clamp(200px, 35vw, 400px);
+  height: clamp(200px, 35vw, 400px);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 210, 195, 0.35) 0%, transparent 70%);
+  filter: blur(50px);
+  pointer-events: none;
+}
+
+/* ─── Canvas ─────────────────────────────────────────────────────────────── */
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* ─── Brilho central ─────────────────────────────────────────────────────── */
+
+.centerGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(300px, 50vw, 600px);
+  height: clamp(300px, 50vw, 600px);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(232, 198, 201, 0.38) 0%, transparent 65%);
+  filter: blur(8px);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* ─── Vinheta ────────────────────────────────────────────────────────────── */
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 50%, rgba(170, 132, 125, 0.1) 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* ─── Content ────────────────────────────────────────────────────────────── */
+
+.content {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+/* ─── Logo wrapper ───────────────────────────────────────────────────────── */
+
+.logoWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Brilho difuso atrás da logo */
+.logoGlow {
+  position: absolute;
+  inset: -48px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 198, 201, 0.7) 0%, transparent 62%);
+  pointer-events: none;
+}
+
+/* Anel interno pulsante */
+.ring {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(185, 79, 95, 0.35);
+  pointer-events: none;
+}
+
+/* Anel externo suave */
+.ring2 {
+  position: absolute;
+  inset: -28px;
+  border-radius: 50%;
+  border: 1px solid rgba(232, 198, 201, 0.45);
+  pointer-events: none;
+}
+
+/* Anel externo extra */
+.ring3 {
+  position: absolute;
+  inset: -48px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(232, 198, 201, 0.2);
+  pointer-events: none;
+}
+
+/* ─── Logo circular ──────────────────────────────────────────────────────── */
+
+.logo {
+  display: block;
+  width: clamp(160px, 24vw, 230px) !important;
+  height: clamp(160px, 24vw, 230px) !important;
+  border-radius: 9999px;
+  object-fit: cover;
+  object-position: center;
+  box-shadow:
+    0 0 0 2px rgba(255, 250, 243, 0.6),
+    0 20px 60px rgba(51, 34, 34, 0.12),
+    0 8px 24px rgba(185, 79, 95, 0.1);
+}
+
+/* Shimmer sweep sobre a logo */
+.logoShimmer {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 250, 243, 0.45) 50%,
+    transparent 70%
+  );
+  pointer-events: none;
+  animation: shimmerSweep 3.5s ease 2s infinite;
+}
+
+@keyframes shimmerSweep {
+  0%   { background-position: -200% center; opacity: 0; }
+  10%  { opacity: 1; }
+  45%  { background-position: 200% center; opacity: 0; }
+  100% { background-position: 200% center; opacity: 0; }
+}
+
+/* ─── Sparkles orbitais ──────────────────────────────────────────────────── */
+
+.orbiter {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #e0b5bc;
+  font-size: 11px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+/* ─── Tagline mínima ─────────────────────────────────────────────────────── */
+
+.tagline {
+  font-family: var(--font-display), 'Bodoni MT', 'Didot', serif;
+  font-size: clamp(20px, 3.5vw, 36px);
+  font-weight: 300;
+  font-style: italic;
+  color: #332222;
+  letter-spacing: 0.05em;
+  margin-top: clamp(20px, 3vw, 32px);
+  text-align: center;
+}
+
+.tagline em {
+  font-style: italic;
+  color: #b94f5f;
+  font-weight: 400;
+}
+
+/* ─── Linha decorativa abaixo da tagline ─────────────────────────────────── */
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: clamp(14px, 2vw, 20px);
+}
+
+.divLine {
+  height: 0.5px;
+  width: clamp(28px, 4vw, 48px);
+  background: #e8c6c9;
+}
+
+.divDot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #b94f5f;
+  opacity: 0.6;
+}
