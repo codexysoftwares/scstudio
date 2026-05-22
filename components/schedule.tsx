@@ -5,8 +5,11 @@ import { motion, useInView } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
 import { Clock, X, Sparkles } from 'lucide-react'
 import { fadeUp, staggerContainer } from '@/lib/animations'
+import type { PublicBusinessHour } from '@/lib/services'
 
-const schedule = [
+const WEEKDAY_NAMES = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado']
+
+const STATIC_SCHEDULE = [
   { day: 'Segunda-feira', hours: 'Fechado', closed: true },
   { day: 'Terça-feira', hours: '09:00 – 16:00', closed: false },
   { day: 'Quarta-feira', hours: '08:00 – 16:00', closed: false },
@@ -21,7 +24,19 @@ const rowVariant = {
   visible: { opacity: 1, x: 0, transition: { duration: 0.4, ease: 'easeOut' } },
 }
 
-export function Schedule() {
+export function Schedule({ hours }: { hours?: PublicBusinessHour[] } = {}) {
+  const schedule = hours && hours.length > 0
+    ? [...hours]
+        .sort((a, b) => (a.weekday === 0 ? 7 : a.weekday) - (b.weekday === 0 ? 7 : b.weekday))
+        .map((h) => ({
+          day: WEEKDAY_NAMES[h.weekday],
+          hours: h.isClosed || !h.opensAt || !h.closesAt
+            ? 'Fechado'
+            : `${h.opensAt} – ${h.closesAt}`,
+          closed: h.isClosed || !h.opensAt,
+        }))
+    : STATIC_SCHEDULE
+
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
 

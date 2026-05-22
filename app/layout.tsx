@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Bodoni_Moda, Manrope } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from 'sonner'
 import './globals.css'
 
 const bodoni = Bodoni_Moda({
@@ -57,6 +58,7 @@ export default function RootLayout({
         className={`${bodoni.variable} ${manrope.variable} font-sans antialiased`}
       >
         {children}
+        <Toaster position="bottom-right" richColors closeButton />
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

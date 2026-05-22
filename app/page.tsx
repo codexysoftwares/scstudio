@@ -8,15 +8,21 @@ import { Contact } from '@/components/contact'
 import { Footer } from '@/components/footer'
 import { WhatsAppButton } from '@/components/whatsapp-button'
 import { IntroWrapper } from '@/components/intro-wrapper'
+import { getPublicServices, getPublicBusinessHours } from '@/lib/public-data'
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [services, businessHours] = await Promise.all([
+    getPublicServices(),
+    getPublicBusinessHours(),
+  ])
+
   return (
     <IntroWrapper>
       <main className="min-h-screen">
         <Header />
         <Hero />
-        <Services />
-        <Schedule />
+        <Services services={services} businessHours={businessHours} />
+        <Schedule hours={businessHours} />
         <About />
         <Testimonials />
         <Contact />

@@ -1,0 +1,52 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: scstudio-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-scstudio}
+      POSTGRES_USER: ${POSTGRES_USER:-scstudio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scstudio}
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-scstudio} -d ${POSTGRES_DB:-scstudio}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - scstudio_internal
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: scstudio-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-scstudio}:${POSTGRES_PASSWORD:-scstudio}@postgres:5432/${POSTGRES_DB:-scstudio}
+      DEFAULT_ORGANIZATION_SLUG: ${DEFAULT_ORGANIZATION_SLUG:-sc-studio}
+      DEFAULT_ORGANIZATION_NAME: ${DEFAULT_ORGANIZATION_NAME:-SC Studio & Esmalteria}
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+      ZAPI_INSTANCE_ID: ${ZAPI_INSTANCE_ID:-}
+      ZAPI_TOKEN: ${ZAPI_TOKEN:-}
+      ZAPI_CLIENT_TOKEN: ${ZAPI_CLIENT_TOKEN:-}
+    ports:
+      - '3000:3000'
+    networks:
+      - scstudio_internal
+
+volumes:
+  postgres_data:
+
+networks:
+  scstudio_internal:
+    driver: bridge

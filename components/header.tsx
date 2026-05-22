@@ -49,7 +49,10 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="hidden md:block">
+        <div className="hidden md:flex items-center gap-3">
+          <Button asChild variant="outline" size="lg" className="font-medium tracking-wide">
+            <Link href="/gestao">Area de Gestao</Link>
+          </Button>
           <Button asChild size="lg" className="font-medium tracking-wide">
             <a
               href="https://online.maapp.com.br/scstudioeesmalteria"
@@ -89,6 +92,11 @@ export function Header() {
               {link.label}
             </Link>
           ))}
+          <Button asChild variant="outline" size="lg" className="mt-2 font-medium tracking-wide">
+            <Link href="/gestao" onClick={() => setIsMobileMenuOpen(false)}>
+              Area de Gestao
+            </Link>
+          </Button>
           <Button asChild size="lg" className="mt-2 font-medium tracking-wide">
             <a
               href="https://online.maapp.com.br/scstudioeesmalteria"

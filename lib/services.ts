@@ -139,6 +139,13 @@ export const SERVICES: Service[] = [
   },
 ]
 
+export type PublicBusinessHour = {
+  weekday: number
+  opensAt: string | null
+  closesAt: string | null
+  isClosed: boolean
+}
+
 export const DAY_HOURS: Record<number, { open: number; close: number } | null> = {
   0: null,
   1: null,
@@ -149,7 +156,21 @@ export const DAY_HOURS: Record<number, { open: number; close: number } | null> =
   6: { open: 8 * 60, close: 16 * 60 },
 }
 
-export function getTimeSlots(date: Date, durationMin: number): string[] {
+export function getTimeSlots(date: Date, durationMin: number, hours?: PublicBusinessHour[]): string[] {
+  if (hours && hours.length > 0) {
+    const h = hours.find((x) => x.weekday === date.getDay())
+    if (!h || h.isClosed || !h.opensAt || !h.closesAt) return []
+    const [oh, om] = h.opensAt.split(':').map(Number)
+    const [ch, cm] = h.closesAt.split(':').map(Number)
+    const open = oh * 60 + om
+    const close = ch * 60 + cm
+    const slots: string[] = []
+    for (let m = open; m + durationMin <= close; m += 30) {
+      slots.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`)
+    }
+    return slots
+  }
+
   const cfg = DAY_HOURS[date.getDay()]
   if (!cfg) return []
 

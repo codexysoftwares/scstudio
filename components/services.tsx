@@ -27,7 +27,7 @@ import { format, isBefore, startOfToday } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
 import { fadeUp, staggerContainer, cardReveal } from '@/lib/animations'
-import { SERVICES, type Service, type ServiceCategory, getTimeSlots, photoUrl } from '@/lib/services'
+import { SERVICES, type Service, type ServiceCategory, type PublicBusinessHour, getTimeSlots, photoUrl } from '@/lib/services'
 
 type BookStep = 'datetime' | 'info' | 'success'
 
@@ -36,7 +36,14 @@ const CATEGORIES: { key: ServiceCategory; label: string }[] = [
   { key: 'cilios', label: 'Cílios & Sobrancelhas' },
 ]
 
-export function Services() {
+export function Services({
+  services: propServices,
+  businessHours,
+}: {
+  services?: Service[]
+  businessHours?: PublicBusinessHour[]
+} = {}) {
+  const services = propServices ?? SERVICES
   const [activeCategory, setActiveCategory] = useState<ServiceCategory>('unhas')
   const [booking, setBooking] = useState<Service | null>(null)
   const [step, setStep] = useState<BookStep>('datetime')
@@ -54,8 +61,8 @@ export function Services() {
   const gridInView = useInView(gridRef, { once: true, margin: '-60px' })
 
   const today = startOfToday()
-  const timeSlots = selectedDate && booking ? getTimeSlots(selectedDate, booking.durationMin) : []
-  const filteredServices = SERVICES.filter((s) => s.category === activeCategory)
+  const timeSlots = selectedDate && booking ? getTimeSlots(selectedDate, booking.durationMin, businessHours) : []
+  const filteredServices = services.filter((s) => s.category === activeCategory)
 
   function openBooking(service: Service) {
     setBooking(service)
@@ -225,8 +232,14 @@ export function Services() {
                         selected={selectedDate}
                         onSelect={(d) => { setSelectedDate(d); setSelectedTime(null) }}
                         disabled={(d) => {
+                          if (isBefore(d, today)) return true
+                          if (businessHours && businessHours.length > 0) {
+                            const h = businessHours.find((x) => x.weekday === d.getDay())
+                            return !h || h.isClosed || !h.opensAt
+                          }
+                          // fallback: disable Sun(0) and Mon(1)
                           const day = d.getDay()
-                          return day === 0 || day === 1 || isBefore(d, today)
+                          return day === 0 || day === 1
                         }}
                         locale={ptBR}
                         className="rounded-xl border border-border w-fit"
