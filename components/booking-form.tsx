@@ -1,85 +1,76 @@
 'use client'
 
-import { useState } from 'react'
-import { Calendar } from '@/components/ui/calendar'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { format, isBefore, startOfToday } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import {
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  MessageCircle,
+  Sparkles,
+  UserRound,
+} from 'lucide-react'
+import { toast } from 'sonner'
+
 import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent } from '@/components/ui/card'
-import {
-  Clock,
-  CheckCircle,
-  ChevronRight,
-  ChevronLeft,
-  MessageCircle,
-  Sparkles,
-} from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { format, isBefore, startOfToday } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { toast } from 'sonner'
-
-type ServiceCategory = 'unhas' | 'cilios'
-
-interface Service {
-  name: string
-  duration: string
-  durationMin: number
-  price: string
-  category: ServiceCategory
-}
-
-const SERVICES: Service[] = [
-  { name: 'Alongamento (novo)', duration: '1h 15min', durationMin: 75, price: 'R$ 140,00', category: 'unhas' },
-  { name: 'Manutenção + Mão', duration: '1h 15min', durationMin: 75, price: 'R$ 120,00', category: 'unhas' },
-  { name: 'Esmaltação em Gel', duration: '1h', durationMin: 60, price: 'R$ 60,00', category: 'unhas' },
-  { name: 'Spa dos Pés', duration: '1h 30min', durationMin: 90, price: 'R$ 90,00', category: 'unhas' },
-  { name: 'Pé e Mão', duration: '1h 10min', durationMin: 70, price: 'R$ 60,00', category: 'unhas' },
-  { name: 'Manicure', duration: '50min', durationMin: 50, price: 'R$ 35,00', category: 'unhas' },
-  { name: 'Pedicure', duration: '50min', durationMin: 50, price: 'R$ 35,00', category: 'unhas' },
-  { name: 'Remoção de Alongamento', duration: '30min', durationMin: 30, price: 'R$ 40,00', category: 'unhas' },
-  { name: 'Decoração', duration: '30min', durationMin: 30, price: 'R$ 10,00', category: 'unhas' },
-  { name: 'Francesa Definitiva', duration: '20min', durationMin: 20, price: 'R$ 20,00', category: 'unhas' },
-  { name: 'Cílios Brasileiro', duration: '1h 50min', durationMin: 110, price: 'R$ 110,00', category: 'cilios' },
-  { name: 'Manutenção de Cílios', duration: '1h', durationMin: 60, price: 'R$ 90,00', category: 'cilios' },
-  { name: 'Designer Comum', duration: '30min', durationMin: 30, price: 'R$ 40,00', category: 'cilios' },
-  { name: 'Designer com Henna', duration: '45min', durationMin: 45, price: 'R$ 50,00', category: 'cilios' },
-]
-
-// day 0=Sun, minutes from midnight
-const DAY_HOURS: Record<number, { open: number; close: number } | null> = {
-  0: null,
-  1: null,
-  2: { open: 9 * 60, close: 16 * 60 },
-  3: { open: 8 * 60, close: 16 * 60 },
-  4: { open: 8 * 60, close: 16 * 60 },
-  5: { open: 8 * 60, close: 18 * 60 },
-  6: { open: 8 * 60, close: 16 * 60 },
-}
-
-function getTimeSlots(date: Date, durationMin: number): string[] {
-  const cfg = DAY_HOURS[date.getDay()]
-  if (!cfg) return []
-  const slots: string[] = []
-  for (let m = cfg.open; m + durationMin <= cfg.close; m += 30) {
-    const h = Math.floor(m / 60)
-    const min = m % 60
-    slots.push(`${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`)
-  }
-  return slots
-}
+import {
+  getTimeSlots,
+  SERVICES as DEFAULT_SERVICES,
+  type PublicBusinessHour,
+  type Service,
+} from '@/lib/services'
 
 type Step = 1 | 2 | 3 | 4
 
-const STEP_LABELS = ['Serviço', 'Data & Hora', 'Seus Dados']
+type AvailabilityProfessional = {
+  id: string
+  displayName: string
+  specialty: string
+  isFeatured: boolean
+  availableSlots: string[]
+  activeBookingCount: number
+}
 
-export function BookingForm() {
+const STEP_LABELS = ['Serviço', 'Profissional & Horário', 'Seus Dados']
+
+export function BookingForm({
+  services: propServices,
+  businessHours,
+  lockedProfessionalId,
+  lockedProfessionalName,
+}: {
+  services?: Service[]
+  businessHours?: PublicBusinessHour[]
+  lockedProfessionalId?: string
+  lockedProfessionalName?: string
+} = {}) {
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const hasMountedRef = useRef(false)
+
+  const services = propServices && propServices.length > 0 ? propServices : DEFAULT_SERVICES
+  const categories = useMemo(
+    () => [...new Set(services.map((service) => service.category))].filter(Boolean),
+    [services]
+  )
+
   const [step, setStep] = useState<Step>(1)
-  const [activeCategory, setActiveCategory] = useState<ServiceCategory>('unhas')
+  const [activeCategory, setActiveCategory] = useState<string>(categories[0] ?? 'unhas')
   const [selectedService, setSelectedService] = useState<Service | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  const [selectedProfessionalId, setSelectedProfessionalId] = useState<string | null>(null)
   const [selectedTime, setSelectedTime] = useState<string | null>(null)
+  const [availabilityProfessionals, setAvailabilityProfessionals] = useState<AvailabilityProfessional[]>([])
+  const [availabilitySlots, setAvailabilitySlots] = useState<string[]>([])
+  const [allowProfessionalSelection, setAllowProfessionalSelection] = useState(true)
+  const [loadingAvailability, setLoadingAvailability] = useState(false)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [notes, setNotes] = useState('')
@@ -87,42 +78,147 @@ export function BookingForm() {
   const [fallbackUrl, setFallbackUrl] = useState<string | null>(null)
 
   const today = startOfToday()
-  const timeSlots =
-    selectedDate && selectedService ? getTimeSlots(selectedDate, selectedService.durationMin) : []
+  const filteredServices = services.filter((service) => service.category === activeCategory)
 
-  const formattedDate =
-    selectedDate
-      ? format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-      : ''
+  const selectedProfessional = availabilityProfessionals.find(
+    (professional) => professional.id === selectedProfessionalId
+  )
+
+  const timeSlots = useMemo(() => {
+    if (!selectedDate || !selectedService) return []
+
+    if (!selectedService.id) {
+      return getTimeSlots(selectedDate, selectedService.durationMin, businessHours)
+    }
+
+    if (allowProfessionalSelection) {
+      return selectedProfessional?.availableSlots ?? []
+    }
+
+    return availabilitySlots
+  }, [
+    allowProfessionalSelection,
+    availabilityProfessionals,
+    availabilitySlots,
+    businessHours,
+    selectedDate,
+    selectedProfessional,
+    selectedService,
+  ])
 
   const formattedDateShort =
-    selectedDate ? format(selectedDate, "dd/MM/yyyy (EEE)", { locale: ptBR }) : ''
+    selectedDate ? format(selectedDate, 'dd/MM/yyyy (EEE)', { locale: ptBR }) : ''
+
+  useEffect(() => {
+    if (!selectedDate || !selectedService?.id) {
+      setAvailabilityProfessionals([])
+      setAvailabilitySlots([])
+      setAllowProfessionalSelection(true)
+      setSelectedProfessionalId(null)
+      return
+    }
+
+    const date = format(selectedDate, 'yyyy-MM-dd')
+    setLoadingAvailability(true)
+    setSelectedTime(null)
+
+    const availUrl = `/api/booking/availability?date=${date}&serviceId=${selectedService.id}`
+      + (lockedProfessionalId ? `&professionalId=${lockedProfessionalId}` : '')
+    fetch(availUrl)
+      .then((res) => res.json())
+      .then((data) => {
+        const professionals = (data.professionals ?? []) as AvailabilityProfessional[]
+        const canChooseProfessional = !lockedProfessionalId && data.allowProfessionalSelection !== false
+        const slots = (data.allAvailableSlots ?? []) as string[]
+
+        setAvailabilityProfessionals(professionals)
+        setAvailabilitySlots(slots)
+        setAllowProfessionalSelection(canChooseProfessional)
+
+        if (lockedProfessionalId) {
+          setSelectedProfessionalId(lockedProfessionalId)
+          return
+        }
+
+        if (!canChooseProfessional) {
+          setSelectedProfessionalId(null)
+          return
+        }
+
+        setSelectedProfessionalId((current) => {
+          if (current && professionals.some((professional) => professional.id === current)) {
+            return current
+          }
+          return professionals[0]?.id ?? null
+        })
+      })
+      .catch(() => {
+        setAvailabilityProfessionals([])
+        setAvailabilitySlots([])
+        setSelectedProfessionalId(null)
+      })
+      .finally(() => setLoadingAvailability(false))
+  }, [lockedProfessionalId, selectedDate, selectedService?.id])
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true
+      return
+    }
+
+    containerRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  }, [step])
 
   async function handleSubmit() {
     if (!selectedService || !selectedDate || !selectedTime || !name.trim() || !phone.trim()) return
+
+    if (allowProfessionalSelection && selectedService.id && !selectedProfessionalId) {
+      toast.error('Selecione uma profissional para continuar.')
+      return
+    }
+
     setIsSubmitting(true)
+
     try {
+      const payload = selectedService.id
+        ? {
+            name: name.trim(),
+            phone: phone.trim(),
+            serviceId: selectedService.id,
+            professionalId: allowProfessionalSelection ? selectedProfessionalId : null,
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            time: selectedTime,
+            notes: notes.trim() || undefined,
+          }
+        : {
+            name: name.trim(),
+            phone: phone.trim(),
+            serviceName: selectedService.name,
+            serviceDuration: selectedService.duration,
+            servicePrice: selectedService.price,
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            time: selectedTime,
+            notes: notes.trim() || undefined,
+          }
+
       const res = await fetch('/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          phone: phone.trim(),
-          serviceName: selectedService.name,
-          serviceDuration: selectedService.duration,
-          servicePrice: selectedService.price,
-          date: formattedDate,
-          time: selectedTime,
-          notes: notes.trim() || undefined,
-        }),
+        body: JSON.stringify(payload),
       })
+
       const data = await res.json()
-      if (data.success) {
-        if (!data.ownerSent) setFallbackUrl(data.ownerWhatsAppFallback)
-        setStep(4)
-      } else {
-        toast.error('Erro ao enviar. Tente agendar pelo WhatsApp.')
+
+      if (!res.ok || !data.success) {
+        toast.error(data.error || 'Erro ao enviar. Tente agendar pelo WhatsApp.')
+        return
       }
+
+      if (!data.ownerSent) setFallbackUrl(data.ownerWhatsAppFallback)
+      setStep(4)
     } catch {
       toast.error('Erro de conexão. Tente agendar pelo WhatsApp.')
     } finally {
@@ -132,24 +228,39 @@ export function BookingForm() {
 
   function reset() {
     setStep(1)
+    setActiveCategory(categories[0] ?? 'unhas')
     setSelectedService(null)
     setSelectedDate(undefined)
+    setSelectedProfessionalId(null)
     setSelectedTime(null)
+    setAvailabilityProfessionals([])
     setName('')
     setPhone('')
     setNotes('')
     setFallbackUrl(null)
   }
 
+  function isDateDisabled(date: Date) {
+    if (isBefore(date, today)) return true
+
+    if (businessHours && businessHours.length > 0) {
+      const dayHours = businessHours.find((hour) => hour.weekday === date.getDay())
+      return !dayHours || dayHours.isClosed || !dayHours.opensAt || !dayHours.closesAt
+    }
+
+    const day = date.getDay()
+    return day === 0 || day === 1
+  }
+
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Step indicator */}
+    <div ref={containerRef} className="max-w-4xl mx-auto scroll-mt-28">
       {step < 4 && (
-        <div className="flex items-center justify-center mb-8 gap-1">
-          {STEP_LABELS.map((label, i) => {
-            const n = i + 1
-            const isActive = step === n
-            const isDone = step > n
+        <div className="flex items-center justify-center mb-8 gap-1 flex-wrap">
+          {STEP_LABELS.map((label, index) => {
+            const currentStep = index + 1
+            const isActive = step === currentStep
+            const isDone = step > currentStep
+
             return (
               <div key={label} className="flex items-center gap-1">
                 <div
@@ -168,11 +279,11 @@ export function BookingForm() {
                       !isActive && !isDone && 'border-muted-foreground'
                     )}
                   >
-                    {isDone ? '✓' : n}
+                    {isDone ? '✓' : currentStep}
                   </span>
                   <span className="hidden sm:inline">{label}</span>
                 </div>
-                {i < STEP_LABELS.length - 1 && (
+                {index < STEP_LABELS.length - 1 && (
                   <div className={cn('h-px w-4 mx-1', isDone ? 'bg-primary' : 'bg-border')} />
                 )}
               </div>
@@ -181,27 +292,32 @@ export function BookingForm() {
         </div>
       )}
 
-      {/* STEP 1 — Choose service */}
       {step === 1 && (
         <div className="space-y-5">
-          <div className="flex justify-center gap-3">
-            {(['unhas', 'cilios'] as const).map((cat) => (
+          <div className="flex justify-center gap-3 flex-wrap">
+            {categories.map((category) => (
               <Button
-                key={cat}
-                variant={activeCategory === cat ? 'default' : 'outline'}
-                onClick={() => setActiveCategory(cat)}
+                key={category}
+                variant={activeCategory === category ? 'default' : 'outline'}
+                onClick={() => setActiveCategory(category)}
                 className="font-medium"
               >
-                {cat === 'unhas' ? 'Unhas' : 'Cílios & Sobrancelhas'}
+                {category === 'unhas' ? 'Unhas' : category === 'cilios' ? 'Cílios & Sobrancelhas' : category}
               </Button>
             ))}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {SERVICES.filter((s) => s.category === activeCategory).map((service) => (
+            {filteredServices.map((service) => (
               <button
-                key={service.name}
-                onClick={() => setSelectedService(service)}
+                key={service.id ?? service.name}
+                onClick={() => {
+                  setSelectedService(service)
+                  setSelectedDate(undefined)
+                  setSelectedProfessionalId(null)
+                  setSelectedTime(null)
+                  setAvailabilityProfessionals([])
+                }}
                 className={cn(
                   'text-left p-4 rounded-xl border-2 transition-all duration-200 group',
                   selectedService?.name === service.name
@@ -212,13 +328,18 @@ export function BookingForm() {
                 <div className="font-semibold text-foreground mb-2 group-hover:text-primary transition-colors">
                   {service.name}
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-3 mb-2">
                   <span className="text-sm text-muted-foreground flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     {service.duration}
                   </span>
                   <span className="font-semibold text-primary">{service.price}</span>
                 </div>
+                {service.professionals && service.professionals.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Profissionais: {service.professionals.map((professional) => professional.name).join(', ')}
+                  </p>
+                )}
               </button>
             ))}
           </div>
@@ -231,11 +352,10 @@ export function BookingForm() {
         </div>
       )}
 
-      {/* STEP 2 — Date & time */}
       {step === 2 && (
         <div className="space-y-5">
           {selectedService && (
-            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between">
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 flex items-center justify-between gap-3">
               <div>
                 <p className="font-semibold text-foreground">{selectedService.name}</p>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -254,21 +374,77 @@ export function BookingForm() {
                 setSelectedDate(date)
                 setSelectedTime(null)
               }}
-              disabled={(date) => {
-                const day = date.getDay()
-                return day === 0 || day === 1 || isBefore(date, today)
-              }}
+              disabled={isDateDisabled}
               locale={ptBR}
               className="rounded-xl border border-border shadow-sm"
             />
           </div>
 
+          {selectedDate && lockedProfessionalId && lockedProfessionalName && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <UserRound className="h-4 w-4 text-primary" />
+              <span>Atendimento com <span className="font-semibold text-foreground">{lockedProfessionalName}</span></span>
+            </div>
+          )}
+
+          {selectedDate && allowProfessionalSelection && selectedService?.id && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <UserRound className="h-4 w-4 text-primary" />
+                <span>Profissionais disponíveis</span>
+                {loadingAvailability && (
+                  <span className="inline-block w-3 h-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {availabilityProfessionals.map((professional) => (
+                  <button
+                    key={professional.id}
+                    onClick={() => {
+                      setSelectedProfessionalId(professional.id)
+                      setSelectedTime(null)
+                    }}
+                    className={cn(
+                      'text-left rounded-xl border p-4 transition-all',
+                      selectedProfessionalId === professional.id
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-border hover:border-primary/40'
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="font-semibold text-foreground">{professional.displayName}</span>
+                      <span className="text-xs text-primary">
+                        {professional.availableSlots.length} horário{professional.availableSlots.length === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                    {professional.specialty && (
+                      <p className="text-sm text-muted-foreground mt-1">{professional.specialty}</p>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {!loadingAvailability && availabilityProfessionals.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma profissional habilitada para este serviço nesta data.
+                </p>
+              )}
+            </div>
+          )}
+
+          {selectedDate && !allowProfessionalSelection && selectedService?.id && (
+            <p className="text-sm text-muted-foreground text-center">
+              A agenda vai selecionar automaticamente a profissional disponível para este serviço.
+            </p>
+          )}
+
           {selectedDate && timeSlots.length > 0 && (
             <div>
               <p className="text-sm font-medium text-foreground mb-3">
-                Horários disponíveis —{' '}
+                Horários disponíveis{' '}
                 <span className="text-primary capitalize">
-                  {format(selectedDate, "EEE dd/MM", { locale: ptBR })}
+                  {format(selectedDate, 'EEE dd/MM', { locale: ptBR })}
                 </span>
               </p>
               <div className="flex flex-wrap gap-2">
@@ -290,9 +466,9 @@ export function BookingForm() {
             </div>
           )}
 
-          {selectedDate && timeSlots.length === 0 && (
+          {selectedDate && !loadingAvailability && timeSlots.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-2">
-              Sem horários disponíveis para o serviço selecionado nesta data.
+              Sem horários disponíveis para a combinação de serviço, profissional e data.
             </p>
           )}
 
@@ -302,7 +478,7 @@ export function BookingForm() {
             </Button>
             <Button
               onClick={() => setStep(3)}
-              disabled={!selectedDate || !selectedTime}
+              disabled={!selectedDate || !selectedTime || (allowProfessionalSelection && selectedService?.id ? !selectedProfessionalId : false)}
               className="px-8"
             >
               Próximo <ChevronRight className="ml-1 h-4 w-4" />
@@ -311,25 +487,31 @@ export function BookingForm() {
         </div>
       )}
 
-      {/* STEP 3 — Personal info */}
       {step === 3 && (
         <div className="space-y-5">
-          {/* Summary */}
           <Card className="border-border/50">
             <CardContent className="p-4 space-y-2">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm gap-3">
                 <span className="text-muted-foreground">Serviço</span>
-                <span className="font-medium">{selectedService?.name}</span>
+                <span className="font-medium text-right">{selectedService?.name}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              {selectedService?.id && (
+                <div className="flex justify-between text-sm gap-3">
+                  <span className="text-muted-foreground">Profissional</span>
+                  <span className="font-medium text-right">
+                    {selectedProfessional?.displayName || 'Automática pela agenda'}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm gap-3">
                 <span className="text-muted-foreground">Data</span>
                 <span className="font-medium capitalize">{formattedDateShort}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm gap-3">
                 <span className="text-muted-foreground">Horário</span>
                 <span className="font-medium">{selectedTime}</span>
               </div>
-              <div className="flex justify-between text-sm border-t border-border/50 pt-2 mt-2">
+              <div className="flex justify-between text-sm border-t border-border/50 pt-2 mt-2 gap-3">
                 <span className="text-muted-foreground">Valor</span>
                 <span className="font-semibold text-primary">{selectedService?.price}</span>
               </div>
@@ -365,7 +547,7 @@ export function BookingForm() {
               <Label htmlFor="bk-notes">Observações (opcional)</Label>
               <Textarea
                 id="bk-notes"
-                placeholder="Preferências, alergia a produto, ou qualquer informação importante..."
+                placeholder="Preferências, alergia a produto ou qualquer informação importante."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
@@ -397,7 +579,6 @@ export function BookingForm() {
         </div>
       )}
 
-      {/* STEP 4 — Success */}
       {step === 4 && (
         <div className="text-center space-y-6 py-6">
           <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
@@ -406,7 +587,7 @@ export function BookingForm() {
 
           <div>
             <h3 className="text-2xl font-semibold text-foreground mb-2">
-              Agendamento Solicitado! 🎉
+              Agendamento Solicitado!
             </h3>
             <p className="text-muted-foreground max-w-sm mx-auto">
               {fallbackUrl
@@ -417,31 +598,35 @@ export function BookingForm() {
 
           <Card className="text-left border-border/50 max-w-sm mx-auto">
             <CardContent className="p-4 space-y-2">
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm gap-3">
                 <span className="text-muted-foreground">Serviço</span>
-                <span className="font-medium">{selectedService?.name}</span>
+                <span className="font-medium text-right">{selectedService?.name}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              {selectedService?.id && (
+                <div className="flex justify-between text-sm gap-3">
+                  <span className="text-muted-foreground">Profissional</span>
+                  <span className="font-medium text-right">
+                    {selectedProfessional?.displayName || 'Definida pela agenda'}
+                  </span>
+                </div>
+              )}
+              <div className="flex justify-between text-sm gap-3">
                 <span className="text-muted-foreground">Data</span>
                 <span className="font-medium capitalize">{formattedDateShort}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm gap-3">
                 <span className="text-muted-foreground">Horário</span>
                 <span className="font-medium">{selectedTime}</span>
               </div>
-              <div className="flex justify-between text-sm">
+              <div className="flex justify-between text-sm gap-3">
                 <span className="text-muted-foreground">Valor</span>
                 <span className="font-semibold text-primary">{selectedService?.price}</span>
-              </div>
-              <div className="text-xs text-muted-foreground border-t border-border/50 pt-2 mt-1">
-                📍 Rua Padre Correia de Almeida, 38 — Santa Efigênia, BH
               </div>
             </CardContent>
           </Card>
 
-          {/* Cancelamento policy reminder */}
           <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-            ⚠️ Em caso de cancelamento, avise com pelo menos 2h de antecedência para evitar cobranças.
+            Cancelamentos devem ser avisados com pelo menos 2h de antecedência.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center">

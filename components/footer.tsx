@@ -5,6 +5,19 @@ import { motion, useInView } from 'framer-motion'
 import { Sparkles, Instagram, MapPin, Phone } from 'lucide-react'
 import Link from 'next/link'
 import { staggerContainer, fadeUp } from '@/lib/animations'
+import type { PublicSiteContent } from '@/lib/public-data'
+
+type ContactContent = PublicSiteContent['contact']
+
+const DEFAULTS: ContactContent = {
+  title: 'Vem nos visitar',
+  subtitle: '',
+  phone: '5531990725053',
+  whatsappDisplay: '(31) 99072-5053',
+  instagramHandle: 'scstudioeesmalteria',
+  addressText: 'Rua Padre Correia de Almeida, 38\nSanta Efigênia, BH - MG',
+  mapsEmbedUrl: '',
+}
 
 const navLinks = [
   { href: '#inicio', label: 'Início' },
@@ -14,7 +27,19 @@ const navLinks = [
   { href: '#contato', label: 'Contato' },
 ]
 
-export function Footer() {
+export function Footer({ contact }: { contact?: ContactContent | null }) {
+  const c: ContactContent = {
+    title: contact?.title || DEFAULTS.title,
+    subtitle: contact?.subtitle || DEFAULTS.subtitle,
+    phone: contact?.phone || DEFAULTS.phone,
+    whatsappDisplay: contact?.whatsappDisplay || DEFAULTS.whatsappDisplay,
+    instagramHandle: contact?.instagramHandle || DEFAULTS.instagramHandle,
+    addressText: contact?.addressText || DEFAULTS.addressText,
+    mapsEmbedUrl: contact?.mapsEmbedUrl || DEFAULTS.mapsEmbedUrl,
+  }
+
+  const whatsappHref = `https://wa.me/${c.phone.replace(/\D/g, '')}`
+  const instagramHref = `https://instagram.com/${c.instagramHandle.replace('@', '')}`
   const currentYear = new Date().getFullYear()
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
@@ -63,28 +88,28 @@ export function Footer() {
             <h4 className="font-semibold text-background mb-4">Contato</h4>
             <div className="space-y-3">
               <motion.a
-                href="https://wa.me/5531990725053"
+                href={whatsappHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ x: 4 }}
                 className="flex items-center gap-2 text-background/70 hover:text-accent transition-colors"
               >
                 <Phone className="h-4 w-4" />
-                <span>(31) 99072-5053</span>
+                <span>{c.whatsappDisplay}</span>
               </motion.a>
               <motion.a
-                href="https://instagram.com/scstudioeesmalteria"
+                href={instagramHref}
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ x: 4 }}
                 className="flex items-center gap-2 text-background/70 hover:text-accent transition-colors"
               >
                 <Instagram className="h-4 w-4" />
-                <span>@scstudioeesmalteria</span>
+                <span>@{c.instagramHandle.replace('@', '')}</span>
               </motion.a>
               <div className="flex items-start gap-2 text-background/70">
                 <MapPin className="h-4 w-4 mt-1 flex-shrink-0" />
-                <span>Rua Padre Correia de Almeida, 38<br />Santa Efigênia, BH - MG</span>
+                <span className="whitespace-pre-line">{c.addressText}</span>
               </div>
             </div>
           </motion.div>
@@ -97,13 +122,35 @@ export function Footer() {
           transition={{ delay: 0.6 }}
           className="border-t border-background/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4"
         >
-          <p className="text-background/50 text-sm">
-            © {currentYear} SC Studio & Esmalteria. Todos os direitos reservados.
-          </p>
+          <div className="flex flex-col items-center md:items-start gap-1">
+            <p className="text-background/50 text-sm">
+              © {currentYear} SC Studio & Esmalteria. Todos os direitos reservados.
+            </p>
+            <p className="text-background/30 text-xs">
+              Site desenvolvido por{' '}
+              <a
+                href="https://codexy.com.br/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-background/60 transition-colors underline underline-offset-2"
+              >
+                Codexy
+              </a>
+              {' '}· conheça também o{' '}
+              <a
+                href="https://doctorchatbot.com.br/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hover:text-background/60 transition-colors underline underline-offset-2"
+              >
+                DoctorChatBot
+              </a>
+            </p>
+          </div>
           <div className="flex items-center gap-4">
             {[
-              { href: 'https://instagram.com/scstudioeesmalteria', icon: Instagram, label: 'Instagram' },
-              { href: 'https://wa.me/5531990725053', icon: Phone, label: 'WhatsApp' },
+              { href: instagramHref, icon: Instagram, label: 'Instagram' },
+              { href: whatsappHref, icon: Phone, label: 'WhatsApp' },
             ].map(({ href, icon: Icon, label }) => (
               <motion.a
                 key={label}

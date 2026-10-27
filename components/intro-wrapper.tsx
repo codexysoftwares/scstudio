@@ -34,7 +34,7 @@ export function IntroWrapper({ children }: { children: React.ReactNode }) {
             position: 'fixed',
             inset: 0,
             zIndex: 9999,
-            background: '#faf6ee',
+            background: 'var(--background)',
           }}
         />
       )}

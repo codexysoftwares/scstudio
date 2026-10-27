@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: scstudio-postgres
     restart: unless-stopped
     environment:
@@ -8,7 +8,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-scstudio}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-scstudio}
     ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+      - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./db/init:/docker-entrypoint-initdb.d:ro
@@ -36,11 +36,58 @@ services:
       DEFAULT_ORGANIZATION_SLUG: ${DEFAULT_ORGANIZATION_SLUG:-sc-studio}
       DEFAULT_ORGANIZATION_NAME: ${DEFAULT_ORGANIZATION_NAME:-SC Studio & Esmalteria}
       NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
-      ZAPI_INSTANCE_ID: ${ZAPI_INSTANCE_ID:-}
-      ZAPI_TOKEN: ${ZAPI_TOKEN:-}
-      ZAPI_CLIENT_TOKEN: ${ZAPI_CLIENT_TOKEN:-}
+      WHATSAPP_PROVIDER: ${WHATSAPP_PROVIDER:-evolution}
+      OWNER_WHATSAPP_PHONE: ${OWNER_WHATSAPP_PHONE:-}
+      EVOLUTION_BASE_URL: ${EVOLUTION_BASE_URL:-}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
+      EVOLUTION_INSTANCE_NAME: ${EVOLUTION_INSTANCE_NAME:-}
+      EVOLUTION_INSTANCE_ID: ${EVOLUTION_INSTANCE_ID:-}
+      EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-llama3.1:8b}
+      AGENT_INTERNAL_TOKEN: ${AGENT_INTERNAL_TOKEN:-}
+      TEST_WHATSAPP_PHONE: ${TEST_WHATSAPP_PHONE:-}
+      AGENT_WEBHOOK_BASE_URL: ${AGENT_WEBHOOK_BASE_URL:-http://reception-agent:3005}
+      AGENT_WEBHOOK_PATH: ${AGENT_WEBHOOK_PATH:-/webhooks/evolution}
+      AGENT_V2_ENABLED: ${AGENT_V2_ENABLED:-false}
+      AGENT_V2_STRICT_MODE: ${AGENT_V2_STRICT_MODE:-false}
+      AGENT_SHADOW_MODE: ${AGENT_SHADOW_MODE:-false}
+      AGENT_LLM_ENABLED: ${AGENT_LLM_ENABLED:-true}
+      AGENT_MODEL: ${AGENT_MODEL:-openai/gpt-5.4-nano}
+      AGENT_FALLBACK_MODEL: ${AGENT_FALLBACK_MODEL:-openai/gpt-5.4-mini}
+      AGENT_EMBEDDING_MODEL: ${AGENT_EMBEDDING_MODEL:-text-embedding-3-small}
+      AGENT_EMBEDDINGS_ENABLED: ${AGENT_EMBEDDINGS_ENABLED:-false}
+      AGENT_AI_FREE_CREDIT_USD: ${AGENT_AI_FREE_CREDIT_USD:-5}
+      AGENT_AI_MONTHLY_PAID_BUDGET_BRL: ${AGENT_AI_MONTHLY_PAID_BUDGET_BRL:-100}
+      AGENT_AI_USD_BRL_RATE: ${AGENT_AI_USD_BRL_RATE:-5.02}
+      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY:-}
+      VERCEL_OIDC_TOKEN: ${VERCEL_OIDC_TOKEN:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - '3000:3000'
+    volumes:
+      - ./public/uploads:/app/public/uploads
+    networks:
+      - scstudio_internal
+
+  booking-confirmation-worker:
+    image: curlimages/curl:8.16.0
+    container_name: scstudio-booking-confirmation-worker
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_started
+    environment:
+      AGENT_INTERNAL_TOKEN: ${AGENT_INTERNAL_TOKEN:-}
+      BOOKING_CONFIRMATION_REMINDER_INTERVAL_SECONDS: ${BOOKING_CONFIRMATION_REMINDER_INTERVAL_SECONDS:-300}
+    command:
+      - sh
+      - -c
+      - |
+        while true; do
+          curl -fsS -X POST -H "Authorization: Bearer $$AGENT_INTERNAL_TOKEN" http://app:3000/api/internal/booking-confirmations/send-reminders || true
+          sleep "$$BOOKING_CONFIRMATION_REMINDER_INTERVAL_SECONDS"
+        done
     networks:
       - scstudio_internal
 

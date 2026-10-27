@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isDatabaseConfigured, query } from '@/lib/db'
+import { ensureManagementAgendaAccess, ensureManagementAgendaWriteAccess } from '@/lib/management-auth'
+import { requireStaffSession } from '@/lib/staff-auth'
 
 async function resolveOrgId() {
   const slug = process.env.DEFAULT_ORGANIZATION_SLUG ?? 'sc-studio'
@@ -11,6 +13,9 @@ export async function GET() {
   if (!isDatabaseConfigured()) {
     return NextResponse.json({ transfers: [] })
   }
+  const session = await requireStaffSession()
+  const authError = ensureManagementAgendaAccess(session)
+  if (authError) return authError
   try {
     const orgId = await resolveOrgId()
     if (!orgId) return NextResponse.json({ transfers: [] })
@@ -56,6 +61,9 @@ export async function POST(req: Request) {
   if (!isDatabaseConfigured()) {
     return NextResponse.json({ error: 'DB não configurado' }, { status: 503 })
   }
+  const session = await requireStaffSession()
+  const authError = ensureManagementAgendaWriteAccess(session)
+  if (authError) return authError
   try {
     const body = await req.json()
     const { bookingId, fromProfessionalId, toProfessionalId, transferReason } = body as {

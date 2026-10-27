@@ -7,16 +7,19 @@ import { Sparkles, Quote, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { fadeUp, staggerContainer } from '@/lib/animations'
+import type { PublicTestimonial } from '@/lib/public-data'
 
-const testimonials = [
-  { name: 'Mariana S.', text: 'Melhor estúdio de unhas de BH! Atendimento impecável e resultado sempre perfeito. Minhas unhas nunca estiveram tão lindas!', service: 'Alongamento em Gel' },
-  { name: 'Juliana P.', text: 'Ambiente super acolhedor e profissionais maravilhosas. O alongamento dura muito e fica natural. Super recomendo!', service: 'Manutenção' },
-  { name: 'Fernanda L.', text: 'Fiz o spa dos pés e foi uma experiência incrível! Saí de lá renovada. O cuidado com cada detalhe faz toda diferença.', service: 'Spa dos Pés' },
-  { name: 'Carolina M.', text: 'Adoro o atendimento personalizado! A equipe sempre entende exatamente o que eu quero. Virei cliente fiel.', service: 'Esmaltação em Gel' },
-  { name: 'Beatriz R.', text: 'Os cílios ficaram perfeitos! Muito naturais e a aplicação foi super confortável. Voltarei com certeza!', service: 'Cílios Brasileiro' },
+const STATIC_TESTIMONIALS: PublicTestimonial[] = [
+  { id: '1', authorName: 'Mariana S.', body: 'Melhor estúdio de unhas de BH! Atendimento impecável e resultado sempre perfeito. Minhas unhas nunca estiveram tão lindas!', serviceName: 'Alongamento em Gel' },
+  { id: '2', authorName: 'Juliana P.', body: 'Ambiente super acolhedor e profissionais maravilhosas. O alongamento dura muito e fica natural. Super recomendo!', serviceName: 'Manutenção' },
+  { id: '3', authorName: 'Fernanda L.', body: 'Fiz o spa dos pés e foi uma experiência incrível! Saí de lá renovada. O cuidado com cada detalhe faz toda diferença.', serviceName: 'Spa dos Pés' },
+  { id: '4', authorName: 'Carolina M.', body: 'Adoro o atendimento personalizado! A equipe sempre entende exatamente o que eu quero. Virei cliente fiel.', serviceName: 'Esmaltação em Gel' },
+  { id: '5', authorName: 'Beatriz R.', body: 'Os cílios ficaram perfeitos! Muito naturais e a aplicação foi super confortável. Voltarei com certeza!', serviceName: 'Cílios Brasileiro' },
 ]
 
-export function Testimonials() {
+export function Testimonials({ testimonials }: { testimonials?: PublicTestimonial[] | null }) {
+  const list = testimonials && testimonials.length > 0 ? testimonials : STATIC_TESTIMONIALS
+
   const [currentIndex, setCurrentIndex] = useState(0)
   const [direction, setDirection] = useState(1)
   const [isAutoPlaying, setIsAutoPlaying] = useState(true)
@@ -24,24 +27,28 @@ export function Testimonials() {
   const inView = useInView(ref, { once: true, margin: '-80px' })
 
   useEffect(() => {
+    setCurrentIndex(0)
+  }, [testimonials])
+
+  useEffect(() => {
     if (!isAutoPlaying) return
     const interval = setInterval(() => {
       setDirection(1)
-      setCurrentIndex((prev) => (prev + 1) % testimonials.length)
+      setCurrentIndex((prev) => (prev + 1) % list.length)
     }, 5000)
     return () => clearInterval(interval)
-  }, [isAutoPlaying])
+  }, [isAutoPlaying, list.length])
 
   const goToPrevious = () => {
     setIsAutoPlaying(false)
     setDirection(-1)
-    setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
+    setCurrentIndex((prev) => (prev - 1 + list.length) % list.length)
   }
 
   const goToNext = () => {
     setIsAutoPlaying(false)
     setDirection(1)
-    setCurrentIndex((prev) => (prev + 1) % testimonials.length)
+    setCurrentIndex((prev) => (prev + 1) % list.length)
   }
 
   const slideVariants = {
@@ -49,6 +56,8 @@ export function Testimonials() {
     center: { opacity: 1, x: 0, transition: { duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] } },
     exit: (d: number) => ({ opacity: 0, x: d > 0 ? -60 : 60, transition: { duration: 0.3 } }),
   }
+
+  const current = list[currentIndex] ?? list[0]
 
   return (
     <section id="depoimentos" className="py-20 md:py-28 bg-secondary/30">
@@ -91,7 +100,7 @@ export function Testimonials() {
               <div className="min-h-[160px] relative overflow-hidden">
                 <AnimatePresence custom={direction} mode="wait">
                   <motion.div
-                    key={currentIndex}
+                    key={current.id}
                     custom={direction}
                     variants={slideVariants}
                     initial="enter"
@@ -99,12 +108,14 @@ export function Testimonials() {
                     exit="exit"
                   >
                     <p className="text-lg md:text-xl text-foreground leading-relaxed mb-6 italic">
-                      {`"${testimonials[currentIndex].text}"`}
+                      {`"${current.body}"`}
                     </p>
                     <div className="flex items-center justify-between">
                       <div>
-                        <p className="font-semibold text-foreground">{testimonials[currentIndex].name}</p>
-                        <p className="text-sm text-primary">{testimonials[currentIndex].service}</p>
+                        <p className="font-semibold text-foreground">{current.authorName}</p>
+                        {current.serviceName && (
+                          <p className="text-sm text-primary">{current.serviceName}</p>
+                        )}
                       </div>
                       <div className="flex gap-1">
                         {[...Array(5)].map((_, i) => (
@@ -136,7 +147,7 @@ export function Testimonials() {
             </motion.div>
 
             <div className="flex gap-2 items-center">
-              {testimonials.map((_, index) => (
+              {list.map((_, index) => (
                 <motion.button
                   key={index}
                   onClick={() => { setIsAutoPlaying(false); setCurrentIndex(index) }}

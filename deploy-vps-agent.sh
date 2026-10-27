@@ -1,0 +1,20 @@
+#!/bin/sh
+set -e
+ORG_ID="94b3524c-51f3-42e9-abf9-e626cc5cee9b"
+cat /opt/scstudio/db/init/011_booking_groups.sql | docker exec -i scstudio-postgres psql -U scstudio -d scstudio
+cat /opt/scstudio/db/init/012_whatsapp_agent.sql | docker exec -i scstudio-postgres psql -U scstudio -d scstudio
+docker exec scstudio-postgres psql -U scstudio -d scstudio -c "INSERT INTO schema_migrations (filename) VALUES ('011_booking_groups.sql') ON CONFLICT DO NOTHING;"
+docker exec scstudio-postgres psql -U scstudio -d scstudio -c "INSERT INTO schema_migrations (filename) VALUES ('012_whatsapp_agent.sql') ON CONFLICT DO NOTHING;"
+docker exec scstudio-postgres psql -U scstudio -d scstudio -c "INSERT INTO whatsapp_integration_settings (organization_id, provider, evolution_base_url, evolution_api_key, evolution_instance_name, evolution_webhook_secret, evolution_connected, ollama_base_url, ollama_model, agent_enabled, auto_reply_enabled, booking_enabled, invisible_handoff_enabled, human_handoff_target, test_phone) VALUES ('$ORG_ID','evolution','http://80.241.218.217:8080','123456','studio-sc','studio-sc-webhook-secret',false,'http://80.241.218.217:11434','llama3.1:8b',true,true,true,true,'frontdesk','5531990725053') ON CONFLICT (organization_id) DO UPDATE SET provider=EXCLUDED.provider,evolution_base_url=EXCLUDED.evolution_base_url,evolution_api_key=EXCLUDED.evolution_api_key,evolution_instance_name=EXCLUDED.evolution_instance_name,evolution_webhook_secret=EXCLUDED.evolution_webhook_secret,evolution_connected=EXCLUDED.evolution_connected,ollama_base_url=EXCLUDED.ollama_base_url,ollama_model=EXCLUDED.ollama_model,agent_enabled=EXCLUDED.agent_enabled,auto_reply_enabled=EXCLUDED.auto_reply_enabled,booking_enabled=EXCLUDED.booking_enabled,invisible_handoff_enabled=EXCLUDED.invisible_handoff_enabled,human_handoff_target=EXCLUDED.human_handoff_target,test_phone=EXCLUDED.test_phone,updated_at=NOW();"
+docker exec scstudio-postgres psql -U scstudio -d scstudio -c "INSERT INTO agent_behavior_settings (organization_id, assistant_name, persona_prompt, welcome_message, fallback_message, handoff_message) VALUES ('$ORG_ID','Recepcao SC','Voce atende em nome da Recepcao SC. Fale com naturalidade, clareza e simpatia. Ajude a cliente com servicos, horarios, localizacao e agendamentos, sempre seguindo a disponibilidade real da agenda. Nunca use linguagem tecnica e nunca diga que e um bot.','Ola! Recepcao SC por aqui. Como posso te ajudar hoje?','Consigo te ajudar com servicos, horarios, localizacao e agendamentos. Se preferir, continuo seu atendimento por aqui.','Perfeito. Vou seguir com seu atendimento por aqui.') ON CONFLICT (organization_id) DO UPDATE SET assistant_name=EXCLUDED.assistant_name,persona_prompt=EXCLUDED.persona_prompt,welcome_message=EXCLUDED.welcome_message,fallback_message=EXCLUDED.fallback_message,handoff_message=EXCLUDED.handoff_message,updated_at=NOW();"
+cd /opt/scstudio-agent
+docker compose up -d --build
+if ! curl -s -H "apikey: 123456" http://127.0.0.1:8080/instance/fetchInstances | grep -q '"name":"studio-sc"'; then
+  curl -s -X POST http://127.0.0.1:8080/instance/create -H "Content-Type: application/json" -H "apikey: 123456" -d '{"instanceName":"studio-sc","webhook":"http://scstudio-reception-agent:3005/webhooks/evolution","webhook_by_events":false,"events":["MESSAGES_UPSERT","MESSAGES_UPDATE","CONNECTION_UPDATE"]}'
+  echo
+fi
+docker exec scstudio-postgres psql -U scstudio -d scstudio -c "select filename from schema_migrations where filename in ('011_booking_groups.sql','012_whatsapp_agent.sql') order by filename;"
+docker exec scstudio-postgres psql -U scstudio -d scstudio -c "select provider,evolution_instance_name,agent_enabled,auto_reply_enabled from whatsapp_integration_settings;"
+docker exec scstudio-postgres psql -U scstudio -d scstudio -c "select assistant_name from agent_behavior_settings;"
+docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}' | grep -E 'scstudio|evolution|ollama|reception'
+curl -s -H "apikey: 123456" http://127.0.0.1:8080/instance/fetchInstances

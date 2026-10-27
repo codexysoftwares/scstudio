@@ -1,6 +1,14 @@
-export type ServiceCategory = 'unhas' | 'cilios'
+export type ServiceCategory = string
+
+export interface ServiceProfessional {
+  id: string
+  name: string
+  specialty: string
+  isFeatured: boolean
+}
 
 export interface Service {
+  id?: string
   name: string
   duration: string
   durationMin: number
@@ -8,6 +16,7 @@ export interface Service {
   category: ServiceCategory
   photo: string
   description: string
+  professionals?: ServiceProfessional[]
 }
 
 export const SERVICES: Service[] = [
@@ -154,6 +163,35 @@ export const DAY_HOURS: Record<number, { open: number; close: number } | null> =
   4: { open: 8 * 60, close: 16 * 60 },
   5: { open: 8 * 60, close: 18 * 60 },
   6: { open: 8 * 60, close: 16 * 60 },
+}
+
+function minutesToTime(value: number) {
+  const hours = Math.floor(value / 60)
+  const minutes = value % 60
+  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+}
+
+export function getFallbackBusinessHourForWeekday(weekday: number): PublicBusinessHour {
+  const config = DAY_HOURS[weekday] ?? null
+  if (!config) {
+    return {
+      weekday,
+      opensAt: null,
+      closesAt: null,
+      isClosed: true,
+    }
+  }
+
+  return {
+    weekday,
+    opensAt: minutesToTime(config.open),
+    closesAt: minutesToTime(config.close),
+    isClosed: false,
+  }
+}
+
+export function getDefaultBusinessHours(): PublicBusinessHour[] {
+  return Array.from({ length: 7 }, (_, weekday) => getFallbackBusinessHourForWeekday(weekday))
 }
 
 export function getTimeSlots(date: Date, durationMin: number, hours?: PublicBusinessHour[]): string[] {

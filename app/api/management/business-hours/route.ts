@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { query } from '@/lib/db'
+import { ensureManagementWriteAccess } from '@/lib/management-auth'
+import { requireStaffSession } from '@/lib/staff-auth'
 
 const hourSchema = z.object({
   weekday: z.number().int().min(0).max(6),
@@ -23,6 +25,10 @@ async function resolveOrgId(): Promise<string | null> {
 }
 
 export async function PATCH(req: Request) {
+  const session = await requireStaffSession()
+  const authError = ensureManagementWriteAccess(session)
+  if (authError) return authError
+
   let body: unknown
   try {
     body = await req.json()
@@ -41,6 +47,18 @@ export async function PATCH(req: Request) {
   }
 
   const { hours } = parsed.data
+
+  for (const hour of hours) {
+    if (hour.isClosed) continue
+
+    if (!hour.opensAt || !hour.closesAt) {
+      return NextResponse.json({ error: 'Dias abertos precisam ter abertura e fechamento.' }, { status: 400 })
+    }
+
+    if (hour.opensAt >= hour.closesAt) {
+      return NextResponse.json({ error: 'O horario de abertura precisa ser menor que o de fechamento.' }, { status: 400 })
+    }
+  }
 
   for (const h of hours) {
     await query(

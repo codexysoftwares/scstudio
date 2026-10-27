@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { query } from '@/lib/db'
+import { query, withTransaction } from '@/lib/db'
+import { ensureManagementWriteAccess } from '@/lib/management-auth'
+import { requireStaffSession } from '@/lib/staff-auth'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -27,15 +30,21 @@ function slugify(name: string): string {
 
 const createSchema = z.object({
   name: z.string().min(1).max(120),
-  category: z.enum(['unhas', 'cilios']),
+  category: z.string().min(1).max(60),
+  photoUrl: z.string().min(1).optional().or(z.literal('')),
   durationMin: z.number().int().min(5).max(480),
   priceCents: z.number().int().min(0),
   description: z.string().optional(),
   isFeatured: z.boolean().optional(),
   onlineEnabled: z.boolean().optional(),
+  professionalIds: z.array(z.string().uuid()).max(100).optional(),
 })
 
 export async function POST(req: Request) {
+  const session = await requireStaffSession()
+  const authError = ensureManagementWriteAccess(session)
+  if (authError) return authError
+
   let body: unknown
   try {
     body = await req.json()
@@ -53,7 +62,17 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Organização não encontrada' }, { status: 404 })
   }
 
-  const { name, category, durationMin, priceCents, description, isFeatured = false, onlineEnabled = true } = parsed.data
+  const {
+    name,
+    category,
+    photoUrl,
+    durationMin,
+    priceCents,
+    description,
+    isFeatured = false,
+    onlineEnabled = true,
+    professionalIds = [],
+  } = parsed.data
 
   // Generate unique slug (append random suffix on conflict)
   let baseSlug = slugify(name)
@@ -66,15 +85,35 @@ export async function POST(req: Request) {
     slug = `${baseSlug}-${Date.now().toString(36)}`
   }
 
-  const r = await query<{ id: string }>(
-    `INSERT INTO services
-       (organization_id, name, slug, category, duration_min, price_cents, description, is_active, is_featured, online_booking_enabled)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, true, $8, $9)
-     RETURNING id`,
-    [orgId, name, slug, category, durationMin, priceCents, description ?? name, isFeatured, onlineEnabled]
-  )
+  const normalizedProfessionalIds = [...new Set(professionalIds)] as string[]
+  let createdId = ''
 
-  return NextResponse.json({ success: true, id: r.rows[0].id })
+  await withTransaction(async (client) => {
+    const r = await client.query<{ id: string }>(
+      `INSERT INTO services
+         (organization_id, name, slug, category, photo_url, duration_min, price_cents, description, is_active, is_featured, online_booking_enabled)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, true, $9, $10)
+       RETURNING id`,
+      [orgId, name, slug, category, photoUrl || null, durationMin, priceCents, description ?? name, isFeatured, onlineEnabled]
+    )
+
+    createdId = r.rows[0].id
+
+    if (normalizedProfessionalIds.length > 0) {
+      await client.query(
+        `INSERT INTO service_professionals (service_id, professional_id)
+         SELECT $1, p.id
+         FROM professionals p
+         WHERE p.organization_id = $2
+           AND p.id = ANY($3::uuid[])`,
+        [createdId, orgId, normalizedProfessionalIds]
+      )
+    }
+  })
+
+  revalidatePath('/')
+  revalidatePath('/gestao')
+  return NextResponse.json({ success: true, id: createdId })
 }
 
 // ─── PATCH — update service ───────────────────────────────────────────────────
@@ -82,15 +121,21 @@ export async function POST(req: Request) {
 const updateSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1).max(120).optional(),
-  category: z.enum(['unhas', 'cilios']).optional(),
+  category: z.string().min(1).max(60).optional(),
+  photoUrl: z.string().min(1).optional().or(z.literal('')),
   durationMin: z.number().int().min(5).max(480).optional(),
   priceCents: z.number().int().min(0).optional(),
   isActive: z.boolean().optional(),
   isFeatured: z.boolean().optional(),
   onlineEnabled: z.boolean().optional(),
+  professionalIds: z.array(z.string().uuid()).max(100).optional(),
 })
 
 export async function PATCH(req: Request) {
+  const session = await requireStaffSession()
+  const authError = ensureManagementWriteAccess(session)
+  if (authError) return authError
+
   let body: unknown
   try {
     body = await req.json()
@@ -108,7 +153,7 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ error: 'Organização não encontrada' }, { status: 404 })
   }
 
-  const { id, name, category, durationMin, priceCents, isActive, isFeatured, onlineEnabled } = parsed.data
+  const { id, name, category, photoUrl, durationMin, priceCents, isActive, isFeatured, onlineEnabled, professionalIds } = parsed.data
 
   const setClauses: string[] = ['updated_at = NOW()']
   const values: unknown[] = [id, orgId]
@@ -116,21 +161,46 @@ export async function PATCH(req: Request) {
 
   if (name !== undefined) { setClauses.push(`name = $${idx++}`); values.push(name) }
   if (category !== undefined) { setClauses.push(`category = $${idx++}`); values.push(category) }
+  if (photoUrl !== undefined) { setClauses.push(`photo_url = $${idx++}`); values.push(photoUrl || null) }
   if (durationMin !== undefined) { setClauses.push(`duration_min = $${idx++}`); values.push(durationMin) }
   if (priceCents !== undefined) { setClauses.push(`price_cents = $${idx++}`); values.push(priceCents) }
   if (isActive !== undefined) { setClauses.push(`is_active = $${idx++}`); values.push(isActive) }
   if (isFeatured !== undefined) { setClauses.push(`is_featured = $${idx++}`); values.push(isFeatured) }
   if (onlineEnabled !== undefined) { setClauses.push(`online_booking_enabled = $${idx++}`); values.push(onlineEnabled) }
 
-  if (setClauses.length === 1) {
+  const shouldUpdateProfessionals = professionalIds !== undefined
+
+  if (setClauses.length === 1 && !shouldUpdateProfessionals) {
     return NextResponse.json({ error: 'Nada para atualizar' }, { status: 400 })
   }
 
-  await query(
-    `UPDATE services SET ${setClauses.join(', ')} WHERE id = $1 AND organization_id = $2`,
-    values
-  )
+  await withTransaction(async (client) => {
+    if (setClauses.length > 1) {
+      await client.query(
+        `UPDATE services SET ${setClauses.join(', ')} WHERE id = $1 AND organization_id = $2`,
+        values
+      )
+    }
 
+    if (shouldUpdateProfessionals) {
+      const normalizedProfessionalIds = [...new Set(professionalIds ?? [])] as string[]
+      await client.query('DELETE FROM service_professionals WHERE service_id = $1', [id])
+
+      if (normalizedProfessionalIds.length > 0) {
+        await client.query(
+          `INSERT INTO service_professionals (service_id, professional_id)
+           SELECT $1, p.id
+           FROM professionals p
+           WHERE p.organization_id = $2
+             AND p.id = ANY($3::uuid[])`,
+          [id, orgId, normalizedProfessionalIds]
+        )
+      }
+    }
+  })
+
+  revalidatePath('/')
+  revalidatePath('/gestao')
   return NextResponse.json({ success: true })
 }
 
@@ -141,6 +211,10 @@ const deleteSchema = z.object({
 })
 
 export async function DELETE(req: Request) {
+  const session = await requireStaffSession()
+  const authError = ensureManagementWriteAccess(session)
+  if (authError) return authError
+
   let body: unknown
   try {
     body = await req.json()
@@ -163,5 +237,7 @@ export async function DELETE(req: Request) {
     [parsed.data.id, orgId]
   )
 
+  revalidatePath('/')
+  revalidatePath('/gestao')
   return NextResponse.json({ success: true })
 }

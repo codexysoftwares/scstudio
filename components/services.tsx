@@ -1,40 +1,45 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { motion, useInView, AnimatePresence } from 'framer-motion'
+import { useMemo, useRef, useState } from 'react'
+import { motion, useInView } from 'framer-motion'
+import { CalendarDays, Check, Clock, Sparkles, X } from 'lucide-react'
+import Image from 'next/image'
+
+import { SequentialBookingForm } from '@/components/sequential-booking-form'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent } from '@/components/ui/card'
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { Calendar } from '@/components/ui/calendar'
-import {
-  Sparkles,
-  Clock,
-  CalendarDays,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  MessageCircle,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { format, isBefore, startOfToday } from 'date-fns'
-import { ptBR } from 'date-fns/locale'
-import { toast } from 'sonner'
 import { fadeUp, staggerContainer, cardReveal } from '@/lib/animations'
-import { SERVICES, type Service, type ServiceCategory, type PublicBusinessHour, getTimeSlots, photoUrl } from '@/lib/services'
+import {
+  SERVICES as DEFAULT_SERVICES,
+  type PublicBusinessHour,
+  type Service,
+  type ServiceCategory,
+  photoUrl,
+} from '@/lib/services'
+import { cn } from '@/lib/utils'
 
-type BookStep = 'datetime' | 'info' | 'success'
+const CATEGORY_LABELS: Record<string, string> = {
+  unhas: 'Unhas',
+  cilios: 'Cilios & Sobrancelhas',
+}
 
-const CATEGORIES: { key: ServiceCategory; label: string }[] = [
-  { key: 'unhas', label: 'Unhas' },
-  { key: 'cilios', label: 'Cílios & Sobrancelhas' },
-]
+function categoryLabel(key: string) {
+  return CATEGORY_LABELS[key] ?? key.charAt(0).toUpperCase() + key.slice(1)
+}
+
+function priceLabelToCents(value: string) {
+  const normalized = value.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.')
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0
+}
+
+function formatDuration(totalMinutes: number) {
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours === 0) return `${minutes}min`
+  if (minutes === 0) return `${hours}h`
+  return `${hours}h ${minutes}min`
+}
 
 export function Services({
   services: propServices,
@@ -43,127 +48,99 @@ export function Services({
   services?: Service[]
   businessHours?: PublicBusinessHour[]
 } = {}) {
-  const services = propServices ?? SERVICES
-  const [activeCategory, setActiveCategory] = useState<ServiceCategory>('unhas')
-  const [booking, setBooking] = useState<Service | null>(null)
-  const [step, setStep] = useState<BookStep>('datetime')
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
-  const [selectedTime, setSelectedTime] = useState<string | null>(null)
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [notes, setNotes] = useState('')
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [fallbackUrl, setFallbackUrl] = useState<string | null>(null)
+  const services = (propServices && propServices.length > 0) ? propServices : DEFAULT_SERVICES
+  const categories = useMemo(
+    () => [...new Set(services.map((service) => service.category))].filter(Boolean),
+    [services]
+  )
+
+  const [activeCategory, setActiveCategory] = useState<ServiceCategory>(() => categories[0] ?? 'unhas')
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([])
 
   const headerRef = useRef(null)
   const gridRef = useRef(null)
+  const bookingRef = useRef<HTMLDivElement | null>(null)
   const headerInView = useInView(headerRef, { once: true, margin: '-80px' })
   const gridInView = useInView(gridRef, { once: true, margin: '-60px' })
 
-  const today = startOfToday()
-  const timeSlots = selectedDate && booking ? getTimeSlots(selectedDate, booking.durationMin, businessHours) : []
-  const filteredServices = services.filter((s) => s.category === activeCategory)
+  const filteredServices = services.filter((service) => service.category === activeCategory)
+  const selectedServices = useMemo(
+    () => selectedServiceIds
+      .map((serviceId) => services.find((service) => service.id === serviceId))
+      .filter((service): service is Service => Boolean(service)),
+    [selectedServiceIds, services]
+  )
+  const totalDuration = selectedServices.reduce((sum, service) => sum + service.durationMin, 0)
+  const totalPrice = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+    selectedServices.reduce((sum, service) => sum + priceLabelToCents(service.price), 0) / 100
+  )
 
-  function openBooking(service: Service) {
-    setBooking(service)
-    setStep('datetime')
-    setSelectedDate(undefined)
-    setSelectedTime(null)
-    setName('')
-    setPhone('')
-    setNotes('')
-    setFallbackUrl(null)
+  function scrollToBooking() {
+    bookingRef.current?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
   }
 
-  function closeModal() {
-    setBooking(null)
-  }
+  function toggleSelectedService(service: Service) {
+    if (!service.id) return
 
-  async function handleSubmit() {
-    if (!booking || !selectedDate || !selectedTime || !name.trim() || !phone.trim()) return
-    setIsSubmitting(true)
-    const dateStr = format(selectedDate, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })
-    try {
-      const res = await fetch('/api/booking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          phone: phone.trim(),
-          serviceName: booking.name,
-          serviceDuration: booking.duration,
-          servicePrice: booking.price,
-          date: dateStr,
-          time: selectedTime,
-          notes: notes.trim() || undefined,
-        }),
-      })
-      const data = await res.json()
-      if (data.success) {
-        if (!data.ownerSent) setFallbackUrl(data.ownerWhatsAppFallback)
-        setStep('success')
-      } else {
-        toast.error('Erro ao enviar. Tente pelo WhatsApp.')
+    setSelectedServiceIds((current) => {
+      if (current.includes(service.id!)) {
+        return current.filter((serviceId) => serviceId !== service.id)
       }
-    } catch {
-      toast.error('Erro de conexão. Tente pelo WhatsApp.')
-    } finally {
-      setIsSubmitting(false)
-    }
+      return [...current, service.id!]
+    })
   }
 
-  const formattedDateShort = selectedDate
-    ? format(selectedDate, 'dd/MM/yyyy', { locale: ptBR })
-    : ''
-  const formattedDateLong = selectedDate
-    ? format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })
-    : ''
+  function handleFormSelectionChange(nextServiceIds: string[]) {
+    setSelectedServiceIds((current) => {
+      if (JSON.stringify(current) === JSON.stringify(nextServiceIds)) return current
+      return nextServiceIds
+    })
+  }
 
   return (
     <section id="servicos" className="py-20 md:py-28 bg-secondary/30">
       <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
-
-        {/* Header */}
         <motion.div
           ref={headerRef}
           variants={staggerContainer}
           initial="hidden"
           animate={headerInView ? 'visible' : 'hidden'}
-          className="text-center max-w-2xl mx-auto mb-12"
+          className="text-center max-w-3xl mx-auto mb-12"
         >
           <motion.div variants={fadeUp} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-4">
             <Sparkles className="h-4 w-4" />
-            <span className="text-sm font-medium tracking-wide">Serviços & Agendamento</span>
+            <span className="text-sm font-medium tracking-wide">Servicos & Agendamento</span>
           </motion.div>
           <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl lg:text-5xl font-semibold text-foreground mb-4 text-balance">
-            Escolha seu serviço & agende
+            Agende seu momento
           </motion.h2>
           <motion.p variants={fadeUp} className="text-muted-foreground text-lg">
-            Selecione o serviço e agende diretamente pelo site — rápido e fácil
+            Escolha um ou varios servicos, veja os horarios compativeis da agenda e conclua tudo no mesmo fluxo.
           </motion.p>
         </motion.div>
 
-        {/* Category Tabs */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={headerInView ? { opacity: 1, y: 0 } : {}}
           transition={{ delay: 0.4, duration: 0.5 }}
-          className="flex justify-center gap-4 mb-10"
+          className="flex justify-center gap-4 mb-10 flex-wrap"
         >
-          {CATEGORIES.map((cat) => (
-            <motion.div key={cat.key} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
+          {categories.map((category) => (
+            <motion.div key={category} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
               <Button
-                variant={activeCategory === cat.key ? 'default' : 'outline'}
-                onClick={() => setActiveCategory(cat.key)}
+                variant={activeCategory === category ? 'default' : 'outline'}
+                onClick={() => setActiveCategory(category)}
                 className="font-medium tracking-wide"
               >
-                {cat.label}
+                {categoryLabel(category)}
               </Button>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* Cards Grid */}
         <motion.div
           ref={gridRef}
           key={activeCategory}
@@ -173,304 +150,127 @@ export function Services({
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
         >
           {filteredServices.map((service) => (
-            <motion.div key={service.name} variants={cardReveal}>
-              <ServiceCard service={service} onBook={() => openBooking(service)} />
+            <motion.div key={service.id ?? service.name} variants={cardReveal}>
+              <ServiceCard
+                service={service}
+                selected={Boolean(service.id && selectedServiceIds.includes(service.id))}
+                onToggle={() => toggleSelectedService(service)}
+              />
             </motion.div>
           ))}
         </motion.div>
-      </div>
 
-      {/* ── Booking Modal ── */}
-      <Dialog open={!!booking} onOpenChange={(open) => { if (!open) closeModal() }}>
-        <DialogContent className="max-w-xl w-full p-0 overflow-hidden gap-0 rounded-2xl">
-          <DialogTitle className="sr-only">Agendar {booking?.name}</DialogTitle>
-
-          {booking && (
-            <div className="flex flex-col max-h-[92vh] overflow-y-auto">
-
-              {/* Photo banner */}
-              <div className="relative h-36 shrink-0 overflow-hidden rounded-t-2xl">
-                <img
-                  src={photoUrl(booking.photo, 800, 288)}
-                  alt={booking.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-transparent" />
-                <div className="absolute bottom-4 left-5 right-14">
-                  <p className="text-white font-semibold text-base leading-tight">
-                    {booking.name}
-                  </p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="text-white/70 text-xs flex items-center gap-1">
-                      <Clock className="h-3 w-3" /> {booking.duration}
-                    </span>
-                    <span className="text-white font-bold text-sm">{booking.price}</span>
+        <div className="mt-10 space-y-6">
+          <Card className="border-border/50 shadow-lg">
+            <CardContent className="p-5 md:p-6">
+              <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                    <CalendarDays className="h-4 w-4" />
+                    <span>{selectedServices.length > 0 ? 'Resumo da visita' : 'Comece escolhendo seus servicos'}</span>
                   </div>
+
+                  {selectedServices.length > 0 ? (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        {selectedServices.map((service) => (
+                          <button
+                            key={service.id ?? service.name}
+                            type="button"
+                            onClick={() => toggleSelectedService(service)}
+                            className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/8 px-3 py-1.5 text-sm text-foreground transition hover:border-primary/40 hover:bg-primary/12"
+                          >
+                            <span>{service.name}</span>
+                            <X className="h-3.5 w-3.5 text-primary" />
+                          </button>
+                        ))}
+                      </div>
+
+                      <p className="text-sm text-muted-foreground">
+                        {selectedServices.length} servico(s) selecionado(s) • {formatDuration(totalDuration)} • {totalPrice}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Adicione servicos nos cards acima ou use o formulario abaixo para montar sua visita completa.
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedServiceIds([])}
+                    disabled={selectedServices.length === 0}
+                  >
+                    Limpar selecao
+                  </Button>
+                  <Button onClick={scrollToBooking} className="px-6" disabled={selectedServices.length === 0}>
+                    {selectedServices.length > 1 ? 'Escolher horarios' : 'Escolher horario'}
+                  </Button>
                 </div>
               </div>
+            </CardContent>
+          </Card>
 
-              <AnimatePresence mode="wait">
-
-                {/* ── Step: datetime ── */}
-                {step === 'datetime' && (
-                  <motion.div
-                    key="datetime"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                    className="p-5 space-y-5"
-                  >
-                    <p className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <CalendarDays className="h-4 w-4 text-primary" />
-                      Escolha a data e o horário
-                    </p>
-
-                    <div className="flex justify-center">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={(d) => { setSelectedDate(d); setSelectedTime(null) }}
-                        disabled={(d) => {
-                          if (isBefore(d, today)) return true
-                          if (businessHours && businessHours.length > 0) {
-                            const h = businessHours.find((x) => x.weekday === d.getDay())
-                            return !h || h.isClosed || !h.opensAt
-                          }
-                          // fallback: disable Sun(0) and Mon(1)
-                          const day = d.getDay()
-                          return day === 0 || day === 1
-                        }}
-                        locale={ptBR}
-                        className="rounded-xl border border-border w-fit"
-                      />
-                    </div>
-
-                    {selectedDate && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.25 }}
-                      >
-                        <p className="text-xs font-medium text-muted-foreground mb-2.5 capitalize">
-                          Horários disponíveis — {formattedDateLong}
-                        </p>
-                        {timeSlots.length > 0 ? (
-                          <div className="flex flex-wrap gap-2">
-                            {timeSlots.map((slot) => (
-                              <button
-                                key={slot}
-                                onClick={() => setSelectedTime(slot)}
-                                className={cn(
-                                  'px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all duration-150',
-                                  selectedTime === slot
-                                    ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-                                    : 'border-border hover:border-primary/50 text-foreground hover:bg-secondary/50'
-                                )}
-                              >
-                                {slot}
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-muted-foreground">
-                            Sem horários disponíveis para este serviço nesta data.
-                          </p>
-                        )}
-                      </motion.div>
-                    )}
-
-                    <div className="flex justify-end pt-1">
-                      <Button
-                        onClick={() => setStep('info')}
-                        disabled={!selectedDate || !selectedTime}
-                        className="px-8"
-                      >
-                        Próximo <ChevronRight className="ml-1 h-4 w-4" />
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* ── Step: info ── */}
-                {step === 'info' && (
-                  <motion.div
-                    key="info"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.2 }}
-                    className="p-5 space-y-4"
-                  >
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/15 text-sm">
-                      <CalendarDays className="h-4 w-4 text-primary shrink-0" />
-                      <span className="capitalize font-medium">{formattedDateShort}</span>
-                      <span className="text-muted-foreground">·</span>
-                      <span className="font-semibold text-primary">{selectedTime}</span>
-                    </div>
-
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="m-name">Nome completo *</Label>
-                        <Input
-                          id="m-name"
-                          placeholder="Seu nome"
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          autoComplete="name"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="m-phone">WhatsApp *</Label>
-                        <Input
-                          id="m-phone"
-                          placeholder="(31) 99999-9999"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          type="tel"
-                          autoComplete="tel"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          A confirmação será enviada para este número.
-                        </p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="m-notes">Observações (opcional)</Label>
-                        <Textarea
-                          id="m-notes"
-                          placeholder="Alergia a produto, cor preferida, etc."
-                          value={notes}
-                          onChange={(e) => setNotes(e.target.value)}
-                          rows={2}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between pt-2">
-                      <Button variant="outline" onClick={() => setStep('datetime')}>
-                        <ChevronLeft className="mr-1 h-4 w-4" /> Voltar
-                      </Button>
-                      <Button
-                        onClick={handleSubmit}
-                        disabled={!name.trim() || !phone.trim() || isSubmitting}
-                        className="px-8"
-                      >
-                        {isSubmitting ? (
-                          <span className="flex items-center gap-2">
-                            <span className="h-4 w-4 rounded-full border-2 border-primary-foreground border-t-transparent animate-spin" />
-                            Enviando...
-                          </span>
-                        ) : (
-                          <>Confirmar <ChevronRight className="ml-1 h-4 w-4" /></>
-                        )}
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* ── Step: success ── */}
-                {step === 'success' && (
-                  <motion.div
-                    key="success"
-                    initial={{ opacity: 0, scale: 0.97 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                    className="p-6 text-center space-y-5"
-                  >
-                    <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
-                      className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto"
-                    >
-                      <CheckCircle className="h-8 w-8 text-green-600" />
-                    </motion.div>
-                    <div>
-                      <h3 className="text-xl font-semibold text-foreground mb-1">
-                        Agendamento Solicitado! 🎉
-                      </h3>
-                      <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                        {fallbackUrl
-                          ? 'Use o botão abaixo para confirmar com o studio via WhatsApp.'
-                          : 'Você e o studio receberão a confirmação pelo WhatsApp em breve.'}
-                      </p>
-                    </div>
-
-                    <Card className="text-left border-border/50 max-w-xs mx-auto">
-                      <CardContent className="p-4 space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Serviço</span>
-                          <span className="font-medium">{booking.name}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Data</span>
-                          <span className="font-medium">{formattedDateShort}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Horário</span>
-                          <span className="font-medium">{selectedTime}</span>
-                        </div>
-                        <div className="flex justify-between border-t border-border/50 pt-2">
-                          <span className="text-muted-foreground">Valor</span>
-                          <span className="font-semibold text-primary">{booking.price}</span>
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                      ⚠️ Cancelamentos devem ser avisados com pelo menos 2h de antecedência.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                      {fallbackUrl ? (
-                        <Button asChild className="bg-[#25D366] hover:bg-[#20c45e] text-white">
-                          <a href={fallbackUrl} target="_blank" rel="noopener noreferrer">
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            Confirmar via WhatsApp
-                          </a>
-                        </Button>
-                      ) : (
-                        <Button asChild className="bg-[#25D366] hover:bg-[#20c45e] text-white">
-                          <a href="https://wa.me/5531990725053" target="_blank" rel="noopener noreferrer">
-                            <MessageCircle className="mr-2 h-4 w-4" />
-                            Falar com o Studio
-                          </a>
-                        </Button>
-                      )}
-                      <Button variant="outline" onClick={closeModal}>
-                        Fechar
-                      </Button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          <div ref={bookingRef} className="scroll-mt-24">
+            <Card className="border-border/50 shadow-xl">
+              <CardContent className="p-6 md:p-8">
+                <SequentialBookingForm
+                  services={services}
+                  businessHours={businessHours}
+                  preselectedServiceIds={selectedServiceIds}
+                  onSelectionChange={handleFormSelectionChange}
+                  serviceSelectionMode="external"
+                />
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
     </section>
   )
 }
 
-function ServiceCard({ service, onBook }: { service: Service; onBook: () => void }) {
+function ServiceCard({
+  service,
+  selected,
+  onToggle,
+}: {
+  service: Service
+  selected: boolean
+  onToggle: () => void
+}) {
   return (
-    <div className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 bg-card border border-border/20">
-      {/* Photo */}
+    <div
+      className={cn(
+        'group relative rounded-2xl overflow-hidden shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-xl bg-card border',
+        selected ? 'border-primary/50 ring-1 ring-primary/20' : 'border-border/20'
+      )}
+    >
       <div className="relative aspect-[4/3] overflow-hidden">
-        <img
+        <Image
           src={photoUrl(service.photo)}
           alt={service.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+          className="object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent" />
 
-        {/* Info overlay */}
+        {selected && (
+          <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-xs font-semibold text-primary shadow-sm">
+            <Check className="h-3.5 w-3.5" />
+            Selecionado
+          </div>
+        )}
+
         <div className="absolute bottom-0 left-0 right-0 p-3.5">
           <h3 className="text-white font-semibold text-sm leading-snug mb-1.5">
             {service.name}
           </h3>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <span className="text-white/70 text-xs flex items-center gap-1">
               <Clock className="h-3 w-3" /> {service.duration}
             </span>
@@ -479,15 +279,17 @@ function ServiceCard({ service, onBook }: { service: Service; onBook: () => void
         </div>
       </div>
 
-      {/* Agendar button */}
-      <div className="p-3">
+      <div className="p-3 space-y-2">
         <Button
-          onClick={onBook}
+          onClick={onToggle}
           size="sm"
-          className="w-full text-xs font-medium tracking-wide"
+          variant={selected ? 'default' : 'outline'}
+          className={cn(
+            'w-full text-xs font-medium tracking-wide',
+            selected ? 'bg-primary hover:bg-primary/90' : 'bg-background'
+          )}
         >
-          <CalendarDays className="mr-1.5 h-3.5 w-3.5" />
-          Agendar
+          {selected ? 'Selecionado' : 'Selecionar servico'}
         </Button>
       </div>
     </div>

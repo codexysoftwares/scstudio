@@ -1,0 +1,46 @@
+services:
+  reception-agent:
+    build:
+      context: ./reception-agent
+      dockerfile: Dockerfile
+    container_name: scstudio-reception-agent
+    restart: unless-stopped
+    environment:
+      PORT: 3005
+      APP_BASE_URL: ${APP_BASE_URL:-http://scstudio-app:3000}
+      AGENT_INTERNAL_TOKEN: ${AGENT_INTERNAL_TOKEN}
+      EVOLUTION_BASE_URL: ${EVOLUTION_BASE_URL:-http://evolution:8080}
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      EVOLUTION_INSTANCE_NAME: ${EVOLUTION_INSTANCE_NAME:-studio-sc}
+      EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:-}
+      AGENT_V2_ENABLED: ${AGENT_V2_ENABLED:-false}
+      AGENT_V2_STRICT_MODE: ${AGENT_V2_STRICT_MODE:-false}
+      AGENT_MODEL: ${AGENT_MODEL:-openai/gpt-5.4-nano}
+      AGENT_FALLBACK_MODEL: ${AGENT_FALLBACK_MODEL:-openai/gpt-5.4-mini}
+      AGENT_AI_FREE_CREDIT_USD: ${AGENT_AI_FREE_CREDIT_USD:-5}
+      AGENT_AI_MONTHLY_PAID_BUDGET_BRL: ${AGENT_AI_MONTHLY_PAID_BUDGET_BRL:-100}
+      AGENT_AI_USD_BRL_RATE: ${AGENT_AI_USD_BRL_RATE:-5.02}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-lite}
+      STATE_FILE: /app/data/conversations.json
+    volumes:
+      - agent_data:/app/data
+    ports:
+      - "3005:3005"
+    networks:
+      - scstudio_agent
+      - scstudio_internal
+      - evolution_default
+
+volumes:
+  agent_data:
+
+networks:
+  scstudio_agent:
+    driver: bridge
+  scstudio_internal:
+    external: true
+    name: scstudio_scstudio_internal
+  evolution_default:
+    external: true
+    name: evolution_default

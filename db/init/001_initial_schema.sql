@@ -93,6 +93,7 @@ CREATE TABLE IF NOT EXISTS services (
   name TEXT NOT NULL,
   slug TEXT NOT NULL,
   category TEXT NOT NULL,
+  photo_url TEXT,
   duration_min INTEGER NOT NULL CHECK (duration_min > 0),
   price_cents INTEGER NOT NULL CHECK (price_cents >= 0),
   description TEXT,

@@ -2,18 +2,45 @@
 
 import { useRef } from 'react'
 import { motion, useInView } from 'framer-motion'
-import { Sparkles, Heart, Award, Users } from 'lucide-react'
-import { fadeUp, slideInLeft, slideInRight, staggerContainer, scaleIn } from '@/lib/animations'
+import { Sparkles, ImageIcon } from 'lucide-react'
+import { fadeUp, slideInLeft, staggerContainer } from '@/lib/animations'
+import type { PublicSiteContent } from '@/lib/public-data'
 
-const features = [
-  { icon: Heart, title: 'Atendimento Acolhedor', description: 'Cada cliente é única e merece um atendimento personalizado e carinhoso.' },
-  { icon: Award, title: 'Qualidade Premium', description: 'Utilizamos apenas produtos de alta qualidade para garantir durabilidade e beleza.' },
-  { icon: Users, title: 'Profissionais Especializados', description: 'Nossa equipe é constantemente atualizada nas últimas técnicas e tendências.' },
-]
+type AboutContent = PublicSiteContent['about']
 
-export function About() {
+const DEFAULTS: AboutContent = {
+  title: 'Muito mais do que uma esmalteria, nasceu um sonho',
+  body1: 'O SC Studio & Esmalteria nasceu do propósito de valorizar cada mulher que passa por aqui. Acreditamos que unhas bem cuidadas são uma extensão da personalidade e autoestima de cada cliente.',
+  body2: 'Localizado no coração de Santa Efigênia, em Belo Horizonte, nosso espaço foi pensado para proporcionar conforto, relaxamento e uma experiência única de beleza. Cada detalhe é cuidadosamente planejado para que você se sinta especial.',
+  accentColor: '',
+  imageUrl: '',
+  feature1Title: '',
+  feature1Desc: '',
+  feature2Title: '',
+  feature2Desc: '',
+  feature3Title: '',
+  feature3Desc: '',
+}
+
+export function About({ content }: { content?: AboutContent | null }) {
+  const c: AboutContent = {
+    title: content?.title || DEFAULTS.title,
+    body1: content?.body1 || DEFAULTS.body1,
+    body2: content?.body2 || DEFAULTS.body2,
+    accentColor: content?.accentColor || DEFAULTS.accentColor,
+    imageUrl: content?.imageUrl || DEFAULTS.imageUrl,
+    feature1Title: content?.feature1Title || DEFAULTS.feature1Title,
+    feature1Desc: content?.feature1Desc || DEFAULTS.feature1Desc,
+    feature2Title: content?.feature2Title || DEFAULTS.feature2Title,
+    feature2Desc: content?.feature2Desc || DEFAULTS.feature2Desc,
+    feature3Title: content?.feature3Title || DEFAULTS.feature3Title,
+    feature3Desc: content?.feature3Desc || DEFAULTS.feature3Desc,
+  }
+
   const ref = useRef(null)
   const inView = useInView(ref, { once: true, margin: '-80px' })
+
+  const accentStyle = c.accentColor ? { color: c.accentColor } : undefined
 
   return (
     <section id="sobre" className="py-20 md:py-28 bg-background overflow-hidden">
@@ -34,101 +61,60 @@ export function About() {
               <span className="text-sm font-medium tracking-wide">Sobre Nós</span>
             </motion.div>
 
-            <motion.h2 variants={fadeUp} className="text-3xl md:text-4xl lg:text-5xl font-semibold text-foreground mb-6 text-balance leading-tight">
-              Muito mais do que uma esmalteria,{' '}
-              <span className="text-primary italic">nasceu um sonho</span>
+            <motion.h2
+              variants={fadeUp}
+              className="text-3xl md:text-4xl lg:text-5xl font-semibold text-foreground mb-6 text-balance leading-tight"
+            >
+              {c.title.includes(' nasceu ') ? (
+                <>
+                  {c.title.split(' nasceu ')[0]}{' '}
+                  <span
+                    className={accentStyle ? 'italic' : 'text-primary italic'}
+                    style={accentStyle}
+                  >
+                    nasceu {c.title.split(' nasceu ')[1]}
+                  </span>
+                </>
+              ) : (
+                <span style={accentStyle}>{c.title}</span>
+              )}
             </motion.h2>
 
             <motion.p variants={fadeUp} className="text-muted-foreground text-lg leading-relaxed mb-6">
-              O SC Studio & Esmalteria nasceu do propósito de valorizar cada mulher que
-              passa por aqui. Acreditamos que unhas bem cuidadas são uma extensão da
-              personalidade e autoestima de cada cliente.
+              {c.body1}
             </motion.p>
 
-            <motion.p variants={fadeUp} className="text-muted-foreground text-lg leading-relaxed mb-8">
-              Localizado no coração de Santa Efigênia, em Belo Horizonte, nosso espaço foi
-              pensado para proporcionar conforto, relaxamento e uma experiência única de
-              beleza. Cada detalhe é cuidadosamente planejado para que você se sinta especial.
+            <motion.p variants={slideInLeft} className="text-muted-foreground text-lg leading-relaxed">
+              {c.body2}
             </motion.p>
-
-            <motion.div variants={staggerContainer} className="space-y-6">
-              {features.map((feature) => (
-                <motion.div
-                  key={feature.title}
-                  variants={slideInLeft}
-                  className="flex gap-4 group"
-                >
-                  <motion.div
-                    whileHover={{ scale: 1.1, rotate: 5 }}
-                    transition={{ type: 'spring', stiffness: 400 }}
-                    className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center"
-                  >
-                    <feature.icon className="h-5 w-5 text-primary" />
-                  </motion.div>
-                  <div>
-                    <h3 className="font-semibold text-foreground mb-1">{feature.title}</h3>
-                    <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
           </motion.div>
 
-          {/* Image Grid */}
+          {/* Photo */}
           <motion.div
-            className="order-1 lg:order-2 grid grid-cols-2 gap-4"
-            variants={staggerContainer}
+            className="order-1 lg:order-2"
+            variants={fadeUp}
             initial="hidden"
             animate={inView ? 'visible' : 'hidden'}
           >
-            <div className="space-y-4">
-              <motion.div
-                variants={scaleIn}
-                whileHover={{ scale: 1.03, rotateZ: -1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="aspect-[3/4] rounded-2xl bg-secondary flex items-center justify-center overflow-hidden cursor-default"
-              >
-                <div className="text-center p-6">
-                  <Sparkles className="h-12 w-12 text-primary/40 mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground italic">Ambiente acolhedor</p>
+            <motion.div
+              whileHover={{ scale: 1.02 }}
+              transition={{ type: 'spring', stiffness: 200 }}
+              className="w-full aspect-[4/5] rounded-3xl overflow-hidden border border-primary/15 shadow-[0_32px_80px_rgba(0,0,0,0.12)] ring-1 ring-primary/5 bg-secondary"
+            >
+              {c.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={c.imageUrl}
+                  alt="Sobre o estúdio"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-primary/30">
+                  <ImageIcon className="h-16 w-16" />
+                  <p className="text-sm font-medium">Adicione uma foto na gestão</p>
                 </div>
-              </motion.div>
-              <motion.div
-                variants={scaleIn}
-                whileHover={{ scale: 1.03, rotateZ: 1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="aspect-square rounded-2xl bg-primary/10 flex items-center justify-center overflow-hidden cursor-default"
-              >
-                <div className="text-center p-6">
-                  <Award className="h-10 w-10 text-primary/40 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground italic">Qualidade garantida</p>
-                </div>
-              </motion.div>
-            </div>
-            <div className="space-y-4 pt-8">
-              <motion.div
-                variants={scaleIn}
-                whileHover={{ scale: 1.03, rotateZ: 1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="aspect-square rounded-2xl bg-accent/30 flex items-center justify-center overflow-hidden cursor-default"
-              >
-                <div className="text-center p-6">
-                  <Heart className="h-10 w-10 text-primary/40 mx-auto mb-3" />
-                  <p className="text-sm text-muted-foreground italic">Feito com amor</p>
-                </div>
-              </motion.div>
-              <motion.div
-                variants={scaleIn}
-                whileHover={{ scale: 1.03, rotateZ: -1 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="aspect-[3/4] rounded-2xl bg-secondary flex items-center justify-center overflow-hidden cursor-default"
-              >
-                <div className="text-center p-6">
-                  <Users className="h-12 w-12 text-primary/40 mx-auto mb-4" />
-                  <p className="text-sm text-muted-foreground italic">Equipe especializada</p>
-                </div>
-              </motion.div>
-            </div>
+              )}
+            </motion.div>
           </motion.div>
         </motion.div>
       </div>

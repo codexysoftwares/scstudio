@@ -18,3 +18,13 @@ node_modules
 .DS_Store
 *.tsbuildinfo
 postgres_data/
+*.tgz
+*.bak-*
+*.bak
+_prod-backups/
+.codex-dev*.log
+.claude/
+tsconfig.tsbuildinfo
+check_logs.py
+reset_conv.py
+deploy_agent.py
