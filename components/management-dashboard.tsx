@@ -462,7 +462,7 @@ function FinanceiroPanel({
   professionals: DashboardProfessional[]
   bi: DashboardBiAnalytics
 }) {
-  const topProfs = [...professionals].sort((a, b) => b.revenue - a.revenue).slice(0, 6)
+  const topProfs = [...bi.revenueByProfessional].sort((a, b) => b.revenue - a.revenue).slice(0, 6)
   const maxProfRevenue = topProfs.reduce((m, p) => Math.max(m, p.revenue), 0)
   const maxSvcRevenue = bi.topServices.reduce((m, s) => Math.max(m, s.revenue), 0)
   const hasRevenueByDay = bi.revenueByDay.some((d) => d.revenue > 0)
@@ -532,7 +532,7 @@ function DesempenhoPanel({
 }) {
   const attendanceRate = bi.totals.totalBookings > 0 ? Math.round((bi.totals.completed / bi.totals.totalBookings) * 100) : 0
   const avgOccupancy = professionals.length > 0 ? Math.round(professionals.reduce((t, p) => t + p.occupancy, 0) / professionals.length) : 0
-  const profChart = [...professionals].sort((a, b) => b.bookings - a.bookings).slice(0, 8).map((p) => ({ name: p.name.split(' ')[0], bookings: p.bookings }))
+  const profChart = [...bi.revenueByProfessional].sort((a, b) => b.bookings - a.bookings).slice(0, 8).map((p) => ({ name: p.name.split(' ')[0], bookings: p.bookings }))
   const hasProfBookings = profChart.some((p) => p.bookings > 0)
   const maxStatus = bi.bookingsByStatus.reduce((m, s) => Math.max(m, s.count), 0)
   const maxSvcCount = bi.topServices.reduce((m, s) => Math.max(m, s.count), 0)
