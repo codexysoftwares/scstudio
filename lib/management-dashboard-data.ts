@@ -61,6 +61,23 @@ export type DashboardFinance = {
   averageTicket: number
 }
 
+export type DashboardBiAnalytics = {
+  revenueByDay: Array<{ date: string; label: string; revenue: number; bookings: number }>
+  bookingsByStatus: Array<{ status: string; label: string; count: number }>
+  topServices: Array<{ name: string; count: number; revenue: number }>
+  totals: {
+    totalBookings: number
+    completed: number
+    cancelled: number
+    confirmed: number
+    customers: number
+    depositPending: number
+    depositPendingRevenue: number
+    monthBookings: number
+    monthRevenue: number
+  }
+}
+
 export type DashboardBlock = {
   id: string
   professional: string
@@ -244,6 +261,7 @@ export type ManagementDashboardData = {
   overview: ManagementOverviewData
   professionals: DashboardProfessional[]
   finance: DashboardFinance
+  biAnalytics: DashboardBiAnalytics
   blocks: DashboardBlock[]
   transfers: DashboardTransfer[]
   services: DashboardService[]
@@ -385,6 +403,127 @@ function emptyFinance(): DashboardFinance {
     payrollProjected: 0,
     salonNetProjected: 0,
     averageTicket: 0,
+  }
+}
+
+function emptyBiAnalytics(): DashboardBiAnalytics {
+  return {
+    revenueByDay: [],
+    bookingsByStatus: [],
+    topServices: [],
+    totals: {
+      totalBookings: 0,
+      completed: 0,
+      cancelled: 0,
+      confirmed: 0,
+      customers: 0,
+      depositPending: 0,
+      depositPendingRevenue: 0,
+      monthBookings: 0,
+      monthRevenue: 0,
+    },
+  }
+}
+
+const BI_STATUS_LABELS: Record<string, string> = {
+  pending: 'Pendente',
+  pending_payment: 'Ag. pagamento',
+  confirmed: 'Confirmado',
+  completed: 'Concluído',
+  cancelled: 'Cancelado',
+  rescheduled: 'Reagendado',
+}
+
+// Expressão SQL reutilizada para converter o preço (texto) em numeric
+const PRICE_NUMERIC_SQL = `CAST(NULLIF(REGEXP_REPLACE(REPLACE(service_price_snapshot, ',', '.'), '[^0-9.]', '', 'g'), '') AS numeric)`
+
+async function dbBiAnalytics(orgId: string): Promise<DashboardBiAnalytics> {
+  const [byDay, byStatus, topSvc, totals] = await Promise.all([
+    query<{ date: string; label: string; revenue: string; bookings: string }>(`
+      WITH days AS (
+        SELECT generate_series(CURRENT_DATE - INTERVAL '13 days', CURRENT_DATE, INTERVAL '1 day')::date AS d
+      )
+      SELECT days.d::text AS date,
+             to_char(days.d, 'DD/MM') AS label,
+             COALESCE(SUM(CASE WHEN b.status NOT IN ('cancelled','rescheduled') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS revenue,
+             COUNT(b.id) FILTER (WHERE b.status NOT IN ('cancelled','rescheduled'))::text AS bookings
+      FROM days
+      LEFT JOIN bookings b ON b.booking_date = days.d AND b.organization_id = $1
+      GROUP BY days.d
+      ORDER BY days.d
+    `, [orgId]),
+    query<{ status: string; count: string }>(`
+      SELECT status, COUNT(*)::text AS count
+      FROM bookings
+      WHERE organization_id = $1
+      GROUP BY status
+      ORDER BY COUNT(*) DESC
+    `, [orgId]),
+    query<{ name: string; count: string; revenue: string }>(`
+      SELECT service_name_snapshot AS name,
+             COUNT(*)::text AS count,
+             COALESCE(SUM(CASE WHEN status NOT IN ('cancelled','rescheduled') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS revenue
+      FROM bookings
+      WHERE organization_id = $1
+      GROUP BY service_name_snapshot
+      ORDER BY COUNT(*) DESC
+      LIMIT 6
+    `, [orgId]),
+    query<{
+      total_bookings: string
+      completed: string
+      cancelled: string
+      confirmed: string
+      customers: string
+      deposit_pending: string
+      deposit_pending_revenue: string
+      month_bookings: string
+      month_revenue: string
+    }>(`
+      SELECT COUNT(*)::text AS total_bookings,
+             COUNT(*) FILTER (WHERE status = 'completed')::text AS completed,
+             COUNT(*) FILTER (WHERE status = 'cancelled')::text AS cancelled,
+             COUNT(*) FILTER (WHERE status IN ('confirmed','completed'))::text AS confirmed,
+             COUNT(DISTINCT customer_id)::text AS customers,
+             COUNT(*) FILTER (WHERE status = 'pending_payment')::text AS deposit_pending,
+             COALESCE(SUM(CASE WHEN status = 'pending_payment' THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS deposit_pending_revenue,
+             COUNT(*) FILTER (WHERE date_trunc('month', booking_date) = date_trunc('month', CURRENT_DATE))::text AS month_bookings,
+             COALESCE(SUM(CASE WHEN date_trunc('month', booking_date) = date_trunc('month', CURRENT_DATE) AND status NOT IN ('cancelled','rescheduled') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS month_revenue
+      FROM bookings
+      WHERE organization_id = $1
+    `, [orgId]),
+  ])
+
+  const t = totals.rows[0]
+
+  return {
+    revenueByDay: byDay.rows.map((r) => ({
+      date: r.date,
+      label: r.label,
+      revenue: parseFloat(r.revenue ?? '0'),
+      bookings: parseInt(r.bookings ?? '0', 10),
+    })),
+    bookingsByStatus: byStatus.rows.map((r) => ({
+      status: r.status,
+      label: BI_STATUS_LABELS[r.status] ?? r.status,
+      count: parseInt(r.count ?? '0', 10),
+    })),
+    topServices: topSvc.rows.map((r) => ({
+      name: r.name,
+      count: parseInt(r.count ?? '0', 10),
+      revenue: parseFloat(r.revenue ?? '0'),
+    })),
+    totals: {
+      totalBookings: parseInt(t?.total_bookings ?? '0', 10),
+      completed: parseInt(t?.completed ?? '0', 10),
+      cancelled: parseInt(t?.cancelled ?? '0', 10),
+      confirmed: parseInt(t?.confirmed ?? '0', 10),
+      customers: parseInt(t?.customers ?? '0', 10),
+      depositPending: parseInt(t?.deposit_pending ?? '0', 10),
+      depositPendingRevenue: parseFloat(t?.deposit_pending_revenue ?? '0'),
+      monthBookings: parseInt(t?.month_bookings ?? '0', 10),
+      monthRevenue: parseFloat(t?.month_revenue ?? '0'),
+    },
   }
 }
 
@@ -1277,6 +1416,7 @@ export async function getManagementDashboardData(): Promise<ManagementDashboardD
       testimonials: [],
       teamMembers: [],
       staff: [],
+      biAnalytics: emptyBiAnalytics(),
     }
   }
 
@@ -1296,12 +1436,13 @@ export async function getManagementDashboardData(): Promise<ManagementDashboardD
   let staff: DashboardStaff[] = []
   let testimonials: DashboardTestimonial[] = []
   let teamMembers: DashboardTeamMember[] = []
+  let biAnalytics: DashboardBiAnalytics = emptyBiAnalytics()
 
   try {
     orgId = await resolveManagementOrgId()
 
     if (orgId) {
-      const [dbP, dbF, dbS, dbPr, dbBh, dbBl, dbTr, dbOrg, dbWa, dbAgent, dbInbox, dbLp, dbSt, dbTes, dbTm] = await Promise.allSettled([
+      const [dbP, dbF, dbS, dbPr, dbBh, dbBl, dbTr, dbOrg, dbWa, dbAgent, dbInbox, dbLp, dbSt, dbTes, dbTm, dbBi] = await Promise.allSettled([
         dbProfessionals(orgId),
         dbFinanceSummary(orgId),
         dbServices(orgId),
@@ -1317,6 +1458,7 @@ export async function getManagementDashboardData(): Promise<ManagementDashboardD
         dbStaff(orgId),
         dbTestimonials(orgId),
         dbTeamMembers(orgId),
+        dbBiAnalytics(orgId),
       ])
 
       if (dbP.status === 'fulfilled') professionals = dbP.value
@@ -1334,6 +1476,7 @@ export async function getManagementDashboardData(): Promise<ManagementDashboardD
       if (dbSt.status === 'fulfilled') staff = dbSt.value
       if (dbTes.status === 'fulfilled') testimonials = dbTes.value
       if (dbTm.status === 'fulfilled') teamMembers = dbTm.value
+      if (dbBi.status === 'fulfilled') biAnalytics = dbBi.value
 
       if (professionals.length) {
         const payrollProjected = professionals.reduce((t, p) => t + p.payout, 0)
@@ -1353,6 +1496,7 @@ export async function getManagementDashboardData(): Promise<ManagementDashboardD
     overview,
     professionals,
     finance,
+    biAnalytics,
     blocks,
     transfers,
     services,
@@ -1391,6 +1535,7 @@ export async function getManagementAgendaOnlyData(date?: string): Promise<Manage
       testimonials: [],
       teamMembers: [],
       staff: [],
+      biAnalytics: emptyBiAnalytics(),
     }
   }
 
@@ -1424,5 +1569,6 @@ export async function getManagementAgendaOnlyData(date?: string): Promise<Manage
     testimonials: [],
     teamMembers: [],
     staff: [],
+    biAnalytics: emptyBiAnalytics(),
   }
 }

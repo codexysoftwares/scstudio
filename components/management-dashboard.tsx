@@ -11,7 +11,12 @@ import {
   Star, Package,
   ArrowUpRight, BookOpen, PhoneCall, UserPlus, X, ChevronDown, ChevronUp,
   UserMinus, ArrowRightLeft, Bot, MessageSquare, Send, UserRound,
+  Copy, Share2, Link2, TrendingUp, BarChart3, Wallet, PiggyBank, CalendarCheck,
 } from 'lucide-react'
+import {
+  ResponsiveContainer, AreaChart, Area, BarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, Cell,
+} from 'recharts'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -28,6 +33,7 @@ import type {
   ManagementDashboardData,
   DashboardMetric,
   DashboardFinance,
+  DashboardBiAnalytics,
   DashboardProfessional,
   DashboardBooking,
   DashboardBlock,
@@ -170,6 +176,12 @@ const TABS = [
   { value: 'acessos',      icon: Shield,           label: 'Acessos' },
 ]
 
+const BI_VIEWS = [
+  { key: 'resumo',     label: 'Resumo do dia', icon: LayoutDashboard },
+  { key: 'financeiro', label: 'Financeiro',    icon: DollarSign },
+  { key: 'desempenho', label: 'Desempenho',    icon: BarChart3 },
+] as const
+
 // ─── Professional color palette ────────────────────────────────────────────────
 const PROF_PALETTE = [
   { bg: 'bg-rose-500/20 border-rose-500/40',    text: 'text-rose-200',    dot: 'bg-rose-400',    header: 'text-rose-300'    },
@@ -228,6 +240,274 @@ function SwitchRow({ label, checked, onCheckedChange }: { label: string; checked
 
 const inputClass = "bg-white/5 border-white/10 text-white placeholder:text-white/30 focus:border-rose-400/50 focus:ring-rose-400/20 text-sm"
 
+// ─── Link de agendamento por profissional ───────────────────────────────────────
+
+const BOOKING_BASE_URL = 'https://scstudioeesmalteria.com.br/agenda'
+
+function agendaLinkFor(id: string) {
+  return `${BOOKING_BASE_URL}/${id}`
+}
+
+async function copyAgendaLink(id: string) {
+  const link = agendaLinkFor(id)
+  try {
+    await navigator.clipboard.writeText(link)
+    toast.success('Link copiado!')
+  } catch {
+    try {
+      const ta = document.createElement('textarea')
+      ta.value = link
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+      toast.success('Link copiado!')
+    } catch {
+      toast.error('Não foi possível copiar o link')
+    }
+  }
+}
+
+function shareAgendaWhatsApp(id: string, name: string) {
+  const link = agendaLinkFor(id)
+  const firstName = name.trim().split(/\s+/)[0] ?? ''
+  const text = `Agende seu horário com ${firstName} 💅\n${link}`
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    navigator
+      .share({ title: 'Agendamento SC Studio', text, url: link })
+      .catch(() => {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+      })
+  } else {
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+  }
+}
+
+// ─── BI / Dashboard panels ───────────────────────────────────────────────────
+
+const CHART_COLORS = ['#fb7185', '#a78bfa', '#34d399', '#fbbf24', '#38bdf8', '#f472b6']
+
+type ChartTooltipEntry = { value?: number | string; name?: string; dataKey?: string; color?: string }
+
+function ChartTooltip({
+  active,
+  payload,
+  label,
+  currency,
+  unit,
+}: {
+  active?: boolean
+  payload?: ChartTooltipEntry[]
+  label?: string | number
+  currency?: boolean
+  unit?: string
+}) {
+  if (!active || !payload || payload.length === 0) return null
+  return (
+    <div className="rounded-lg border border-white/10 bg-zinc-900/95 px-3 py-2 text-xs shadow-xl">
+      {label !== undefined && <p className="text-white/50 mb-1">{label}</p>}
+      {payload.map((p, i) => (
+        <p key={i} className="text-white font-semibold">
+          {currency ? toCurrency(Number(p.value)) : `${p.value}${unit ? ` ${unit}` : ''}`}
+        </p>
+      ))}
+    </div>
+  )
+}
+
+function BiKpi({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  accent = 'text-white',
+}: {
+  label: string
+  value: string
+  sub?: string
+  icon?: React.ComponentType<{ size?: number; className?: string }>
+  accent?: string
+}) {
+  return (
+    <Card className="bg-white/5 border-white/10 rounded-xl p-4 flex flex-col gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[11px] text-white/45 uppercase tracking-widest font-medium leading-tight">{label}</p>
+        {Icon && <Icon size={15} className="text-white/25 shrink-0" />}
+      </div>
+      <p className={`text-2xl font-bold leading-none ${accent}`}>{value}</p>
+      {sub && <p className="text-xs text-white/40">{sub}</p>}
+    </Card>
+  )
+}
+
+function HBar({ label, value, max, suffix, color }: { label: string; value: number; max: number; suffix?: string; color: string }) {
+  const pct = max > 0 ? Math.max(3, Math.round((value / max) * 100)) : 0
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs text-white/60 w-28 shrink-0 truncate">{label}</span>
+      <div className="flex-1 h-2.5 rounded-full bg-white/5 overflow-hidden">
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <span className="text-xs text-white/70 font-medium w-16 text-right shrink-0">{suffix === 'R$' ? toCurrency(value) : `${value}${suffix ?? ''}`}</span>
+    </div>
+  )
+}
+
+function FinanceiroPanel({
+  finance,
+  professionals,
+  bi,
+}: {
+  finance: DashboardFinance
+  professionals: DashboardProfessional[]
+  bi: DashboardBiAnalytics
+}) {
+  const topProfs = [...professionals].sort((a, b) => b.revenue - a.revenue).slice(0, 6)
+  const maxProfRevenue = topProfs.reduce((m, p) => Math.max(m, p.revenue), 0)
+  const maxSvcRevenue = bi.topServices.reduce((m, s) => Math.max(m, s.revenue), 0)
+  const hasRevenueByDay = bi.revenueByDay.some((d) => d.revenue > 0)
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <BiKpi label="Faturamento do mês" value={toCurrency(bi.totals.monthRevenue)} sub={`${bi.totals.monthBookings} atendimentos`} icon={Wallet} accent="text-white" />
+        <BiKpi label="Ticket médio" value={toCurrency(finance.averageTicket)} sub="Por atendimento" icon={TrendingUp} accent="text-white" />
+        <BiKpi label="Receita confirmada" value={toCurrency(finance.confirmedRevenue)} sub="Confirmados + concluídos" icon={CheckCircle} accent="text-emerald-400" />
+        <BiKpi label="Sinais pendentes" value={toCurrency(bi.totals.depositPendingRevenue)} sub={`${bi.totals.depositPending} aguardando pagamento`} icon={PiggyBank} accent="text-amber-400" />
+      </div>
+
+      <Sec title="Receita dos últimos 14 dias">
+        {hasRevenueByDay ? (
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={bi.revenueByDay} margin={{ top: 8, right: 8, left: -8, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fb7185" stopOpacity={0.5} />
+                    <stop offset="100%" stopColor="#fb7185" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} tickLine={false} axisLine={false} width={48} tickFormatter={(v: number) => `R$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`} />
+                <RTooltip content={<ChartTooltip currency />} cursor={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                <Area type="monotone" dataKey="revenue" stroke="#fb7185" strokeWidth={2} fill="url(#revGradient)" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-white/30 text-xs text-center py-10">Sem receita registrada nos últimos 14 dias.</p>
+        )}
+      </Sec>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Sec title="Receita por profissional">
+          <div className="space-y-3">
+            {topProfs.length === 0 && <p className="text-white/30 text-xs text-center py-6">Sem dados de profissionais.</p>}
+            {topProfs.map((p, i) => (
+              <HBar key={p.id} label={p.name} value={p.revenue} max={maxProfRevenue} suffix="R$" color={CHART_COLORS[i % CHART_COLORS.length]} />
+            ))}
+          </div>
+        </Sec>
+
+        <Sec title="Serviços que mais faturam">
+          <div className="space-y-3">
+            {bi.topServices.length === 0 && <p className="text-white/30 text-xs text-center py-6">Sem serviços registrados.</p>}
+            {bi.topServices.map((s, i) => (
+              <HBar key={s.name} label={s.name} value={s.revenue} max={maxSvcRevenue} suffix="R$" color={CHART_COLORS[i % CHART_COLORS.length]} />
+            ))}
+          </div>
+        </Sec>
+      </div>
+    </div>
+  )
+}
+
+function DesempenhoPanel({
+  professionals,
+  bi,
+}: {
+  professionals: DashboardProfessional[]
+  bi: DashboardBiAnalytics
+}) {
+  const attendanceRate = bi.totals.totalBookings > 0 ? Math.round((bi.totals.completed / bi.totals.totalBookings) * 100) : 0
+  const avgOccupancy = professionals.length > 0 ? Math.round(professionals.reduce((t, p) => t + p.occupancy, 0) / professionals.length) : 0
+  const profChart = [...professionals].sort((a, b) => b.bookings - a.bookings).slice(0, 8).map((p) => ({ name: p.name.split(' ')[0], bookings: p.bookings }))
+  const hasProfBookings = profChart.some((p) => p.bookings > 0)
+  const maxStatus = bi.bookingsByStatus.reduce((m, s) => Math.max(m, s.count), 0)
+  const maxSvcCount = bi.topServices.reduce((m, s) => Math.max(m, s.count), 0)
+  const statusColor: Record<string, string> = {
+    confirmed: '#34d399',
+    completed: '#10b981',
+    pending: '#fbbf24',
+    pending_payment: '#f59e0b',
+    cancelled: '#fb7185',
+    rescheduled: '#38bdf8',
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <BiKpi label="Agendamentos" value={String(bi.totals.totalBookings)} sub="Total no histórico" icon={CalendarCheck} accent="text-white" />
+        <BiKpi label="Comparecimento" value={`${attendanceRate}%`} sub={`${bi.totals.completed} concluídos`} icon={CheckCircle} accent="text-emerald-400" />
+        <BiKpi label="Cancelamentos" value={String(bi.totals.cancelled)} sub="Agendamentos cancelados" icon={XCircle} accent="text-rose-400" />
+        <BiKpi label="Clientes" value={String(bi.totals.customers)} sub="Clientes atendidos" icon={Users} accent="text-white" />
+      </div>
+
+      <Sec title="Agendamentos por profissional">
+        {hasProfBookings ? (
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={profChart} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} tickLine={false} axisLine={false} width={40} allowDecimals={false} />
+                <RTooltip content={<ChartTooltip unit="atend." />} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
+                <Bar dataKey="bookings" radius={[6, 6, 0, 0]}>
+                  {profChart.map((_, i) => (
+                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        ) : (
+          <p className="text-white/30 text-xs text-center py-10">Sem agendamentos para exibir.</p>
+        )}
+      </Sec>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <Sec title="Agendamentos por status">
+          <div className="space-y-3">
+            {bi.bookingsByStatus.length === 0 && <p className="text-white/30 text-xs text-center py-6">Sem agendamentos.</p>}
+            {bi.bookingsByStatus.map((s) => (
+              <HBar key={s.status} label={s.label} value={s.count} max={maxStatus} color={statusColor[s.status] ?? '#a1a1aa'} />
+            ))}
+          </div>
+        </Sec>
+
+        <Sec title="Serviços mais procurados">
+          <div className="space-y-3">
+            {bi.topServices.length === 0 && <p className="text-white/30 text-xs text-center py-6">Sem serviços registrados.</p>}
+            {bi.topServices.map((s, i) => (
+              <HBar key={s.name} label={s.name} value={s.count} max={maxSvcCount} color={CHART_COLORS[i % CHART_COLORS.length]} />
+            ))}
+            {professionals.length > 0 && (
+              <div className="pt-2 mt-1 border-t border-white/10 flex items-center justify-between">
+                <span className="text-xs text-white/50">Ocupação média da equipe</span>
+                <span className="text-sm font-semibold text-rose-300">{avgOccupancy}%</span>
+              </div>
+            )}
+          </div>
+        </Sec>
+      </div>
+    </div>
+  )
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ManagementDashboard({
@@ -244,6 +524,7 @@ export default function ManagementDashboard({
   const router = useRouter()
   const agendaOnly = sessionRoleKey === 'professional'
   const [activeTab, setActiveTab] = useState(agendaOnly ? 'agenda' : 'visao-geral')
+  const [biView, setBiView] = useState<'resumo' | 'financeiro' | 'desempenho'>('resumo')
 
   // Mutable state from server data
   const [selectedDate, setSelectedDate] = useState(data.overview.selectedDate)
@@ -1664,6 +1945,38 @@ export default function ManagementDashboard({
 
           {/* ── Visão Geral ──────────────────────────────────────────────────── */}
           <TabsContent value="visao-geral" className="space-y-5 mt-0">
+            {/* Seletor de visão (BI) */}
+            <div className="flex flex-wrap gap-2">
+              {BI_VIEWS.map((v) => {
+                const Icon = v.icon
+                const active = biView === v.key
+                return (
+                  <button
+                    key={v.key}
+                    onClick={() => setBiView(v.key)}
+                    className={`flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all ${
+                      active
+                        ? 'border-rose-500/40 bg-rose-500/15 text-rose-200 shadow'
+                        : 'border-white/10 bg-white/[0.03] text-white/50 hover:bg-white/[0.06] hover:text-white/80'
+                    }`}
+                  >
+                    <Icon size={16} className="shrink-0" />
+                    {v.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {biView === 'financeiro' && (
+              <FinanceiroPanel finance={data.finance} professionals={professionals} bi={data.biAnalytics} />
+            )}
+
+            {biView === 'desempenho' && (
+              <DesempenhoPanel professionals={professionals} bi={data.biAnalytics} />
+            )}
+
+            {biView === 'resumo' && (
+            <div className="space-y-5">
             <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
               <div>
                 <p className="text-[10px] uppercase tracking-[0.25em] text-white/30 font-medium">Filtro do dia</p>
@@ -1832,6 +2145,8 @@ export default function ManagementDashboard({
                 </div>
               </Sec>
             </div>
+            </div>
+            )}
           </TabsContent>
 
           {/* ── Landing Page ─────────────────────────────────────────────────── */}
@@ -3463,12 +3778,7 @@ export default function ManagementDashboard({
 
           {/* ── Financeiro ───────────────────────────────────────────────────── */}
           <TabsContent value="financeiro" className="space-y-5 mt-0">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              <Kpi label="Receita bruta" value={toCurrency(data.finance.grossRevenue)} sub="Todos os agendamentos ativos" />
-              <Kpi label="Confirmada" value={toCurrency(data.finance.confirmedRevenue)} sub="Confirmados + concluídos" />
-              <Kpi label="Ticket médio" value={toCurrency(data.finance.averageTicket)} sub="Por atendimento" />
-              <Kpi label="Líquido salão" value={toCurrency(data.finance.salonNetProjected)} sub="Após repasse da equipe" />
-            </div>
+            <FinanceiroPanel finance={data.finance} professionals={professionals} bi={data.biAnalytics} />
 
             <Sec title="Repasse por profissional">
               <div className="overflow-x-auto">
@@ -3611,6 +3921,7 @@ export default function ManagementDashboard({
                           </div>
                         ) : (
                           /* View mode */
+                          <div className="space-y-3">
                           <div className="flex items-center gap-3">
                             <div className="relative shrink-0">
                               <Avatar className="w-11 h-11">
@@ -3647,6 +3958,27 @@ export default function ManagementDashboard({
                               <p className="text-white/25 text-[10px]">ocupação</p>
                               <Progress value={p.occupancy} className="h-1 mt-1 w-16 bg-white/10 [&>div]:bg-rose-400" />
                             </div>
+                          </div>
+
+                          {/* Link de agendamento individual */}
+                          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                            <Link2 size={13} className="text-rose-300/70 shrink-0" />
+                            <span className="flex-1 min-w-0 truncate text-[11px] text-white/45 font-mono">{agendaLinkFor(p.id)}</span>
+                            <button
+                              onClick={() => copyAgendaLink(p.id)}
+                              title="Copiar link"
+                              className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[11px] font-medium text-white/70 hover:bg-white/10 hover:text-white transition-colors shrink-0"
+                            >
+                              <Copy size={12} /> Copiar
+                            </button>
+                            <button
+                              onClick={() => shareAgendaWhatsApp(p.id, p.name)}
+                              title="Compartilhar no WhatsApp"
+                              className="flex items-center gap-1 rounded-lg border border-emerald-500/20 bg-emerald-500/15 px-2.5 py-1 text-[11px] font-medium text-emerald-300 hover:bg-emerald-500/25 transition-colors shrink-0"
+                            >
+                              <Share2 size={12} /> WhatsApp
+                            </button>
+                          </div>
                           </div>
                         )}
                       </CardContent>
