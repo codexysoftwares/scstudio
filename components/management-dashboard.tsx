@@ -356,6 +356,103 @@ function HBar({ label, value, max, suffix, color }: { label: string; value: numb
   )
 }
 
+function biIsoDate(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+function rangeForPreset(preset: string): { from: string; to: string } {
+  const now = new Date()
+  const today = biIsoDate(now)
+  if (preset === 'today') return { from: today, to: today }
+  if (preset === '7d') {
+    const s = new Date(now)
+    s.setDate(s.getDate() - 6)
+    return { from: biIsoDate(s), to: today }
+  }
+  if (preset === 'lastmonth') {
+    const first = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+    const last = new Date(now.getFullYear(), now.getMonth(), 0)
+    return { from: biIsoDate(first), to: biIsoDate(last) }
+  }
+  const first = new Date(now.getFullYear(), now.getMonth(), 1)
+  return { from: biIsoDate(first), to: today }
+}
+
+function PeriodFilter({
+  value,
+  onChange,
+  loading,
+  from,
+  to,
+  onFrom,
+  onTo,
+  onApplyCustom,
+}: {
+  value: string
+  onChange: (preset: string) => void
+  loading: boolean
+  from: string
+  to: string
+  onFrom: (v: string) => void
+  onTo: (v: string) => void
+  onApplyCustom: () => void
+}) {
+  const presets = [
+    { k: 'today', label: 'Hoje' },
+    { k: '7d', label: '7 dias' },
+    { k: 'month', label: 'Este mes' },
+    { k: 'lastmonth', label: 'Mes passado' },
+    { k: 'custom', label: 'Personalizado' },
+  ]
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+      <span className="text-[10px] uppercase tracking-[0.25em] text-white/30 font-medium flex items-center gap-1.5">
+        <CalendarDays size={13} /> Periodo
+      </span>
+      {presets.map((pp) => (
+        <button
+          key={pp.k}
+          onClick={() => onChange(pp.k)}
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
+            value === pp.k
+              ? 'bg-rose-500/20 text-rose-200 border border-rose-500/40'
+              : 'bg-white/[0.03] text-white/50 border border-white/10 hover:text-white/80'
+          }`}
+        >
+          {pp.label}
+        </button>
+      ))}
+      {value === 'custom' && (
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => onFrom(e.target.value)}
+            className="rounded-lg bg-white/[0.05] border border-white/10 px-2 py-1 text-xs text-white/80"
+          />
+          <span className="text-white/30 text-xs">ate</span>
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => onTo(e.target.value)}
+            className="rounded-lg bg-white/[0.05] border border-white/10 px-2 py-1 text-xs text-white/80"
+          />
+          <button
+            onClick={onApplyCustom}
+            className="rounded-lg px-3 py-1.5 text-xs font-medium bg-rose-500/20 text-rose-200 border border-rose-500/40"
+          >
+            Aplicar
+          </button>
+        </div>
+      )}
+      {loading && <span className="text-xs text-white/40">carregando...</span>}
+    </div>
+  )
+}
+
 function FinanceiroPanel({
   finance,
   professionals,
@@ -525,6 +622,39 @@ export default function ManagementDashboard({
   const agendaOnly = sessionRoleKey === 'professional'
   const [activeTab, setActiveTab] = useState(agendaOnly ? 'agenda' : 'visao-geral')
   const [biView, setBiView] = useState<'resumo' | 'financeiro' | 'desempenho'>('resumo')
+  const [biData, setBiData] = useState<DashboardBiAnalytics>(data.biAnalytics)
+  const [biFinance, setBiFinance] = useState<DashboardFinance>(data.finance)
+  const [biPeriod, setBiPeriod] = useState<string>('month')
+  const [biLoading, setBiLoading] = useState(false)
+  const [biFrom, setBiFrom] = useState<string>('')
+  const [biTo, setBiTo] = useState<string>('')
+  const fetchBiAnalytics = useCallback(async (rFrom: string, rTo: string) => {
+    setBiLoading(true)
+    try {
+      const res = await fetch(`/api/management/analytics?from=${rFrom}&to=${rTo}`)
+      if (res.ok) {
+        const json = await res.json()
+        if (json.biAnalytics) setBiData(json.biAnalytics)
+        if (json.finance) setBiFinance(json.finance)
+      }
+    } catch {
+      /* mantem dados atuais */
+    } finally {
+      setBiLoading(false)
+    }
+  }, [])
+  const handleBiPeriod = useCallback(
+    (preset: string) => {
+      setBiPeriod(preset)
+      if (preset === 'custom') return
+      const { from, to } = rangeForPreset(preset)
+      fetchBiAnalytics(from, to)
+    },
+    [fetchBiAnalytics],
+  )
+  const applyBiCustom = useCallback(() => {
+    if (biFrom && biTo) fetchBiAnalytics(biFrom, biTo)
+  }, [biFrom, biTo, fetchBiAnalytics])
 
   // Mutable state from server data
   const [selectedDate, setSelectedDate] = useState(data.overview.selectedDate)
@@ -820,6 +950,8 @@ export default function ManagementDashboard({
             instagramHandle: orgSettings.instagramHandle,
             addressText: orgSettings.addressText,
             mapsEmbedUrl: orgSettings.mapsEmbedUrl,
+            reminderHoursBefore: orgSettings.reminderHoursBefore,
+            pixKey: orgSettings.pixKey,
           }
         }),
       })
@@ -1967,12 +2099,18 @@ export default function ManagementDashboard({
               })}
             </div>
 
+            {(biView === 'financeiro' || biView === 'desempenho') && (
+              <div className="mb-4">
+                <PeriodFilter value={biPeriod} onChange={handleBiPeriod} loading={biLoading} from={biFrom} to={biTo} onFrom={setBiFrom} onTo={setBiTo} onApplyCustom={applyBiCustom} />
+              </div>
+            )}
+
             {biView === 'financeiro' && (
-              <FinanceiroPanel finance={data.finance} professionals={professionals} bi={data.biAnalytics} />
+              <FinanceiroPanel finance={biFinance} professionals={professionals} bi={biData} />
             )}
 
             {biView === 'desempenho' && (
-              <DesempenhoPanel professionals={professionals} bi={data.biAnalytics} />
+              <DesempenhoPanel professionals={professionals} bi={biData} />
             )}
 
             {biView === 'resumo' && (
@@ -3457,6 +3595,27 @@ export default function ManagementDashboard({
                         </FieldRow>
                         <SwitchRow label="Escolha de profissional" checked={orgSettings.allowProfessionalSelection} onCheckedChange={(v) => toggleOrgSwitch('allowProfessionalSelection', v)} />
                         <SwitchRow label="Exigir sinal" checked={orgSettings.requireDeposit} onCheckedChange={(v) => toggleOrgSwitch('requireDeposit', v)} />
+                        <div className="flex items-center justify-between gap-3 py-2">
+                          <label className="text-sm text-white/70">Chave PIX (sinal)</label>
+                          <input
+                            type="text"
+                            value={orgSettings.pixKey ?? ''}
+                            onChange={(e) => setOrgSettings((s) => ({ ...s, pixKey: e.target.value }))}
+                            placeholder="CPF, CNPJ, e-mail ou telefone"
+                            className="w-56 rounded-lg bg-white/[0.05] border border-white/10 px-2 py-1.5 text-sm text-white/80"
+                          />
+                        </div>
+                        <div className="flex items-center justify-between gap-3 py-2">
+                          <label className="text-sm text-white/70">Enviar lembrete (horas antes)</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={168}
+                            value={orgSettings.reminderHoursBefore}
+                            onChange={(e) => setOrgSettings((s) => ({ ...s, reminderHoursBefore: parseInt(e.target.value || '24', 10) }))}
+                            className="w-24 rounded-lg bg-white/[0.05] border border-white/10 px-2 py-1.5 text-sm text-white/80"
+                          />
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -3778,7 +3937,8 @@ export default function ManagementDashboard({
 
           {/* ── Financeiro ───────────────────────────────────────────────────── */}
           <TabsContent value="financeiro" className="space-y-5 mt-0">
-            <FinanceiroPanel finance={data.finance} professionals={professionals} bi={data.biAnalytics} />
+            <PeriodFilter value={biPeriod} onChange={handleBiPeriod} loading={biLoading} from={biFrom} to={biTo} onFrom={setBiFrom} onTo={setBiTo} onApplyCustom={applyBiCustom} />
+            <FinanceiroPanel finance={biFinance} professionals={professionals} bi={biData} />
 
             <Sec title="Repasse por profissional">
               <div className="overflow-x-auto">

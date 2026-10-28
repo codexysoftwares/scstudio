@@ -73,11 +73,12 @@ function buildBookingSummaryMessage(rows: AgentBookingMessageRow[], requiresDepo
   return `Prontinho${firstName ? `, ${firstName}` : ''}! Seu agendamento para ${serviceLabel} ficou confirmado na ${dateLabel} as ${timeLabel}. Se precisar de mais alguma coisa, estou por aqui.`
 }
 
-function buildPaymentMessage(totalPriceCents: number, customerName: string) {
+function buildPaymentMessage(totalPriceCents: number, customerName: string, pixKey?: string | null) {
   const { cents, label } = calculateDepositAmount(totalPriceCents)
   const firstName = customerName.trim().split(/\s+/)[0] ?? ''
+  const key = (pixKey && pixKey.trim()) ? pixKey.trim() : PIX_KEY
 
-  return `Agora e so enviar o ${label} para confirmar${firstName ? `, ${firstName}` : ''}.\n\nValor: ${formatBRL(cents)}\nChave PIX: ${PIX_KEY}\n\nAssim que fizer o pagamento, pode me mandar o comprovante por aqui.`
+  return `Agora e so enviar o ${label} para confirmar${firstName ? `, ${firstName}` : ''}.\n\nValor: ${formatBRL(cents)}\nChave PIX: ${key}\n\nAssim que fizer o pagamento, pode me mandar o comprovante por aqui.`
 }
 
 export async function resolveAgentBookingInitialStatus(input: {
@@ -127,8 +128,8 @@ export async function resolveAgentBookingInitialStatus(input: {
 
 export async function buildAgentBookingAutomationPayload(orgId: string, bookingIds: string[]): Promise<AgentBookingAutomationPayload> {
   const [orgResult, rowsResult] = await Promise.all([
-    query<{ require_deposit: boolean }>(
-      'SELECT require_deposit FROM organizations WHERE id = $1 LIMIT 1',
+    query<{ require_deposit: boolean; pix_key: string | null }>(
+      'SELECT require_deposit, pix_key FROM organizations WHERE id = $1 LIMIT 1',
       [orgId]
     ),
     query<AgentBookingMessageRow>(
@@ -161,7 +162,7 @@ export async function buildAgentBookingAutomationPayload(orgId: string, bookingI
   return {
     requiresDeposit,
     paymentStatus: requiresDeposit ? 'pending_payment' as const : 'confirmed' as const,
-    paymentMessage: requiresDeposit ? buildPaymentMessage(totalPriceCents, customerName) : null,
+    paymentMessage: requiresDeposit ? buildPaymentMessage(totalPriceCents, customerName, orgResult.rows[0]?.pix_key ?? null) : null,
     bookingSummaryMessage: buildBookingSummaryMessage(rows, requiresDeposit),
   }
 }

@@ -49,6 +49,8 @@ export async function PATCH(req: Request) {
         bookingSlotMinutes?: number
         allowProfessionalSelection?: boolean
         requireDeposit?: boolean
+        reminderHoursBefore?: number
+        pixKey?: string | null
         confirmationChannel?: string
         showWhatsappButton?: boolean
         autoConfirmWhatsapp?: boolean
@@ -110,6 +112,8 @@ export async function PATCH(req: Request) {
         if (org.bookingSlotMinutes !== undefined) { updates.push(`booking_slot_minutes = $${idx++}`); values.push(org.bookingSlotMinutes) }
         if (org.allowProfessionalSelection !== undefined) { updates.push(`allow_professional_selection = $${idx++}`); values.push(org.allowProfessionalSelection) }
         if (org.requireDeposit !== undefined) { updates.push(`require_deposit = $${idx++}`); values.push(org.requireDeposit) }
+        if (org.reminderHoursBefore !== undefined) { updates.push(`reminder_hours_before = $${idx++}`); values.push(org.reminderHoursBefore) }
+        if (org.pixKey !== undefined) { updates.push(`pix_key = $${idx++}`); values.push(org.pixKey) }
         if (org.confirmationChannel !== undefined) { updates.push(`confirmation_channel = $${idx++}`); values.push(org.confirmationChannel) }
         if (org.showWhatsappButton !== undefined) { updates.push(`show_whatsapp_button = $${idx++}`); values.push(org.showWhatsappButton) }
         if (org.autoConfirmWhatsapp !== undefined) { updates.push(`auto_confirm_whatsapp = $${idx++}`); values.push(org.autoConfirmWhatsapp) }

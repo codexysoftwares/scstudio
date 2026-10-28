@@ -65,6 +65,7 @@ export type DashboardBiAnalytics = {
   revenueByDay: Array<{ date: string; label: string; revenue: number; bookings: number }>
   bookingsByStatus: Array<{ status: string; label: string; count: number }>
   topServices: Array<{ name: string; count: number; revenue: number }>
+  revenueByProfessional: Array<{ id: string; name: string; bookings: number; revenue: number }>
   totals: {
     totalBookings: number
     completed: number
@@ -139,6 +140,8 @@ export type DashboardOrgSettings = {
   bookingSlotMinutes: number
   allowProfessionalSelection: boolean
   requireDeposit: boolean
+  reminderHoursBefore: number
+  pixKey: string | null
   confirmationChannel: string
   showWhatsappButton: boolean
   autoConfirmWhatsapp: boolean
@@ -286,6 +289,8 @@ const EMPTY_ORG: DashboardOrgSettings = {
   bookingSlotMinutes: 30,
   allowProfessionalSelection: true,
   requireDeposit: false,
+  reminderHoursBefore: 24,
+  pixKey: null,
   confirmationChannel: 'whatsapp',
   showWhatsappButton: true,
   autoConfirmWhatsapp: false,
@@ -411,6 +416,7 @@ function emptyBiAnalytics(): DashboardBiAnalytics {
     revenueByDay: [],
     bookingsByStatus: [],
     topServices: [],
+    revenueByProfessional: [],
     totals: {
       totalBookings: 0,
       completed: 0,
@@ -437,11 +443,17 @@ const BI_STATUS_LABELS: Record<string, string> = {
 // Expressão SQL reutilizada para converter o preço (texto) em numeric
 const PRICE_NUMERIC_SQL = `CAST(NULLIF(REGEXP_REPLACE(REPLACE(service_price_snapshot, ',', '.'), '[^0-9.]', '', 'g'), '') AS numeric)`
 
-async function dbBiAnalytics(orgId: string): Promise<DashboardBiAnalytics> {
-  const [byDay, byStatus, topSvc, totals] = await Promise.all([
+async function dbBiAnalytics(orgId: string, from?: string | null, to?: string | null): Promise<DashboardBiAnalytics> {
+  const fromDate = from ?? null
+  const toDate = to ?? null
+  const RANGE = `AND booking_date BETWEEN COALESCE($2::date, date_trunc('month', CURRENT_DATE)::date) AND COALESCE($3::date, CURRENT_DATE)`
+  const [byDay, byStatus, topSvc, byProf, totals] = await Promise.all([
     query<{ date: string; label: string; revenue: string; bookings: string }>(`
-      WITH days AS (
-        SELECT generate_series(CURRENT_DATE - INTERVAL '13 days', CURRENT_DATE, INTERVAL '1 day')::date AS d
+      WITH rng AS (
+        SELECT COALESCE($2::date, date_trunc('month', CURRENT_DATE)::date) AS d_from,
+               COALESCE($3::date, CURRENT_DATE) AS d_to
+      ), days AS (
+        SELECT generate_series((SELECT d_from FROM rng), (SELECT d_to FROM rng), INTERVAL '1 day')::date AS d
       )
       SELECT days.d::text AS date,
              to_char(days.d, 'DD/MM') AS label,
@@ -451,24 +463,35 @@ async function dbBiAnalytics(orgId: string): Promise<DashboardBiAnalytics> {
       LEFT JOIN bookings b ON b.booking_date = days.d AND b.organization_id = $1
       GROUP BY days.d
       ORDER BY days.d
-    `, [orgId]),
+    `, [orgId, fromDate, toDate]),
     query<{ status: string; count: string }>(`
       SELECT status, COUNT(*)::text AS count
       FROM bookings
-      WHERE organization_id = $1
+      WHERE organization_id = $1 ${RANGE}
       GROUP BY status
       ORDER BY COUNT(*) DESC
-    `, [orgId]),
+    `, [orgId, fromDate, toDate]),
     query<{ name: string; count: string; revenue: string }>(`
       SELECT service_name_snapshot AS name,
              COUNT(*)::text AS count,
              COALESCE(SUM(CASE WHEN status NOT IN ('cancelled','rescheduled') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS revenue
       FROM bookings
-      WHERE organization_id = $1
+      WHERE organization_id = $1 ${RANGE}
       GROUP BY service_name_snapshot
       ORDER BY COUNT(*) DESC
       LIMIT 6
-    `, [orgId]),
+    `, [orgId, fromDate, toDate]),
+    query<{ id: string; name: string; count: string; revenue: string }>(`
+      SELECT pr.id, pr.display_name AS name,
+             COUNT(b.id)::text AS count,
+             COALESCE(SUM(CASE WHEN b.status NOT IN ('cancelled','rescheduled') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS revenue
+      FROM professionals pr
+      LEFT JOIN bookings b ON b.professional_id = pr.id AND b.organization_id = $1
+        AND b.booking_date BETWEEN COALESCE($2::date, date_trunc('month', CURRENT_DATE)::date) AND COALESCE($3::date, CURRENT_DATE)
+      WHERE pr.organization_id = $1
+      GROUP BY pr.id, pr.display_name
+      ORDER BY revenue DESC
+    `, [orgId, fromDate, toDate]),
     query<{
       total_bookings: string
       completed: string
@@ -487,11 +510,11 @@ async function dbBiAnalytics(orgId: string): Promise<DashboardBiAnalytics> {
              COUNT(DISTINCT customer_id)::text AS customers,
              COUNT(*) FILTER (WHERE status = 'pending_payment')::text AS deposit_pending,
              COALESCE(SUM(CASE WHEN status = 'pending_payment' THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS deposit_pending_revenue,
-             COUNT(*) FILTER (WHERE date_trunc('month', booking_date) = date_trunc('month', CURRENT_DATE))::text AS month_bookings,
-             COALESCE(SUM(CASE WHEN date_trunc('month', booking_date) = date_trunc('month', CURRENT_DATE) AND status NOT IN ('cancelled','rescheduled') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS month_revenue
+             COUNT(*)::text AS month_bookings,
+             COALESCE(SUM(CASE WHEN status NOT IN ('cancelled','rescheduled') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS month_revenue
       FROM bookings
-      WHERE organization_id = $1
-    `, [orgId]),
+      WHERE organization_id = $1 ${RANGE}
+    `, [orgId, fromDate, toDate]),
   ])
 
   const t = totals.rows[0]
@@ -513,6 +536,14 @@ async function dbBiAnalytics(orgId: string): Promise<DashboardBiAnalytics> {
       count: parseInt(r.count ?? '0', 10),
       revenue: parseFloat(r.revenue ?? '0'),
     })),
+    revenueByProfessional: byProf.rows
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        bookings: parseInt(r.count ?? '0', 10),
+        revenue: parseFloat(r.revenue ?? '0'),
+      }))
+      .filter((p) => p.bookings > 0 || p.revenue > 0),
     totals: {
       totalBookings: parseInt(t?.total_bookings ?? '0', 10),
       completed: parseInt(t?.completed ?? '0', 10),
@@ -754,7 +785,9 @@ async function dbProfessionals(orgId: string, date?: string | null): Promise<Das
   })
 }
 
-async function dbFinanceSummary(orgId: string): Promise<DashboardFinance> {
+async function dbFinanceSummary(orgId: string, from?: string | null, to?: string | null): Promise<DashboardFinance> {
+  const fromDate = from ?? null
+  const toDate = to ?? null
   const r = await query<{
     gross_revenue: string
     confirmed_revenue: string
@@ -762,40 +795,14 @@ async function dbFinanceSummary(orgId: string): Promise<DashboardFinance> {
     booking_count: string
   }>(`
     SELECT
-      COALESCE(
-        SUM(
-          CASE
-            WHEN status NOT IN ('cancelled', 'rescheduled') THEN
-              CAST(NULLIF(REGEXP_REPLACE(REPLACE(service_price_snapshot, ',', '.'), '[^0-9.]', '', 'g'), '') AS numeric)
-            ELSE 0
-          END
-        ),
-        0
-      )::text AS gross_revenue,
-      COALESCE(
-        SUM(
-          CASE
-            WHEN status IN ('confirmed', 'completed') THEN
-              CAST(NULLIF(REGEXP_REPLACE(REPLACE(service_price_snapshot, ',', '.'), '[^0-9.]', '', 'g'), '') AS numeric)
-            ELSE 0
-          END
-        ),
-        0
-      )::text AS confirmed_revenue,
-      COALESCE(
-        SUM(
-          CASE
-            WHEN status IN ('pending', 'pending_payment') THEN
-              CAST(NULLIF(REGEXP_REPLACE(REPLACE(service_price_snapshot, ',', '.'), '[^0-9.]', '', 'g'), '') AS numeric)
-            ELSE 0
-          END
-        ),
-        0
-      )::text AS pending_revenue,
+      COALESCE(SUM(CASE WHEN status NOT IN ('cancelled', 'rescheduled') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS gross_revenue,
+      COALESCE(SUM(CASE WHEN status IN ('confirmed', 'completed') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS confirmed_revenue,
+      COALESCE(SUM(CASE WHEN status IN ('pending', 'pending_payment') THEN ${PRICE_NUMERIC_SQL} ELSE 0 END), 0)::text AS pending_revenue,
       COUNT(*)::text AS booking_count
     FROM bookings
     WHERE organization_id = $1
-  `, [orgId])
+      AND booking_date BETWEEN COALESCE($2::date, date_trunc('month', CURRENT_DATE)::date) AND COALESCE($3::date, CURRENT_DATE)
+  `, [orgId, fromDate, toDate])
 
   const row = r.rows[0]
   const grossRevenue = parseFloat(row?.gross_revenue ?? '0')
@@ -989,7 +996,7 @@ async function dbBlocks(orgId: string): Promise<DashboardBlock[]> {
       id: row.id,
       professional: row.professional_name ?? 'Todas',
       professionalId: row.professional_id ?? null,
-      period: `${fmt(start)}–${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(end)}`,
+      period: `${fmt(start)}${new Intl.DateTimeFormat('pt-BR', { hour: '2-digit', minute: '2-digit' }).format(end)}`,
       startsAt: start.toISOString(),
       endsAt: end.toISOString(),
       reason: row.reason,
@@ -1053,6 +1060,8 @@ async function dbOrgSettings(orgId: string): Promise<DashboardOrgSettings | null
     booking_slot_minutes: number
     allow_professional_selection: boolean
     require_deposit: boolean
+    reminder_hours_before: number | null
+    pix_key: string | null
     confirmation_channel: string
     show_whatsapp_button: boolean
     auto_confirm_whatsapp: boolean
@@ -1067,7 +1076,8 @@ async function dbOrgSettings(orgId: string): Promise<DashboardOrgSettings | null
             booking_slot_minutes, allow_professional_selection, require_deposit,
             confirmation_channel, show_whatsapp_button, auto_confirm_whatsapp,
             smart_waitlist, assisted_transfer, daily_closure,
-            instagram_handle, address_text, maps_embed_url
+            instagram_handle, address_text, maps_embed_url,
+            reminder_hours_before, pix_key
      FROM organizations WHERE id = $1`,
     [orgId]
   )
@@ -1084,6 +1094,8 @@ async function dbOrgSettings(orgId: string): Promise<DashboardOrgSettings | null
     bookingSlotMinutes: org.booking_slot_minutes,
     allowProfessionalSelection: org.allow_professional_selection,
     requireDeposit: org.require_deposit,
+    reminderHoursBefore: org.reminder_hours_before ?? 24,
+    pixKey: org.pix_key ?? null,
     confirmationChannel: org.confirmation_channel,
     showWhatsappButton: org.show_whatsapp_button,
     autoConfirmWhatsapp: org.auto_confirm_whatsapp,
@@ -1392,6 +1404,16 @@ export async function getManagementOverviewData(date?: string): Promise<Manageme
       finance,
     }
   }
+}
+
+export async function getManagementAnalytics(
+  from?: string | null,
+  to?: string | null,
+): Promise<{ biAnalytics: DashboardBiAnalytics; finance: DashboardFinance }> {
+  const orgId = await resolveManagementOrgId()
+  if (!orgId) return { biAnalytics: emptyBiAnalytics(), finance: emptyFinance() }
+  const [bi, fin] = await Promise.all([dbBiAnalytics(orgId, from, to), dbFinanceSummary(orgId, from, to)])
+  return { biAnalytics: bi, finance: fin }
 }
 
 export async function getManagementDashboardData(): Promise<ManagementDashboardData> {

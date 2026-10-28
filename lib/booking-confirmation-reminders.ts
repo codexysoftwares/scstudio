@@ -71,8 +71,8 @@ async function fetchGroupedServiceLabel(orgId: string, bookingId: string) {
 }
 
 export async function sendDueBookingConfirmationReminders(orgId: string) {
-  const settingsResult = await query<{ auto_confirm_whatsapp: boolean }>(
-    `SELECT auto_confirm_whatsapp
+  const settingsResult = await query<{ auto_confirm_whatsapp: boolean; reminder_hours_before: number }>(
+    `SELECT auto_confirm_whatsapp, reminder_hours_before
      FROM organizations
      WHERE id = $1
      LIMIT 1`,
@@ -82,6 +82,8 @@ export async function sendDueBookingConfirmationReminders(orgId: string) {
   if (!(settingsResult.rows[0]?.auto_confirm_whatsapp ?? false)) {
     return { ok: true, sent: 0, skipped: 0 }
   }
+
+  const reminderHours = settingsResult.rows[0]?.reminder_hours_before ?? 24
 
   const dueRows = await query<DueReminderRow>(
     `SELECT b.id,
@@ -98,10 +100,10 @@ export async function sendDueBookingConfirmationReminders(orgId: string) {
        AND b.status = 'confirmed'
        AND b.confirmation_request_sent_at IS NULL
        AND (b.booking_group_id IS NULL OR b.booking_sequence = 1)
-       AND (b.booking_date + b.booking_time) >= NOW() + INTERVAL '23 hours 30 minutes'
-       AND (b.booking_date + b.booking_time) <= NOW() + INTERVAL '24 hours 30 minutes'
+       AND (b.booking_date + b.booking_time) >= NOW() + make_interval(hours => $2::int) - INTERVAL '30 minutes'
+       AND (b.booking_date + b.booking_time) <= NOW() + make_interval(hours => $2::int) + INTERVAL '30 minutes'
      ORDER BY b.booking_date ASC, b.booking_time ASC`,
-    [orgId]
+    [orgId, reminderHours]
   )
 
   let sent = 0
